@@ -266,8 +266,13 @@ pm2.connect((err) => {
               }
               
               try {
-                // PM2 start returns a Promise, use it directly
-                await pm2.start(app);
+                // pm2.start(cmd, opts, cb) 使用回调模式，不返回 Promise
+                await new Promise((resolve, reject) => {
+                  pm2.start(app, (err, procs) => {
+                    if (err) reject(err);
+                    else resolve(procs);
+                  });
+                });
                 results.push({ name: app.name, started: true });
               } catch (e) {
                 results.push({ name: app.name, error: e.message });
@@ -299,8 +304,25 @@ pm2.connect((err) => {
             }
             
             // 直接启动，不需要检查已存在（PM2 start 会自动处理）
-            // PM2 start returns a Promise, use it directly
-            await pm2.start(app);
+            // pm2.start(cmd, opts, cb) 使用回调模式，不返回 Promise
+            // 将相对路径解析为绝对路径（基于 ecosystem config 所在目录）
+            const resolvedApp = { ...app };
+            const ecosystemDir = path.dirname(path.resolve(ECOSYSTEM_CONFIG_PATH));
+            if (resolvedApp.cwd && !path.isAbsolute(resolvedApp.cwd)) {
+              resolvedApp.cwd = path.resolve(ecosystemDir, resolvedApp.cwd);
+            }
+            if (resolvedApp.error_file && !path.isAbsolute(resolvedApp.error_file)) {
+              resolvedApp.error_file = path.resolve(ecosystemDir, resolvedApp.error_file);
+            }
+            if (resolvedApp.out_file && !path.isAbsolute(resolvedApp.out_file)) {
+              resolvedApp.out_file = path.resolve(ecosystemDir, resolvedApp.out_file);
+            }
+            await new Promise((resolve, reject) => {
+              pm2.start(resolvedApp, (err, procs) => {
+                if (err) reject(err);
+                else resolve(procs);
+              });
+            });
             
             console.log(JSON.stringify({ success: true, name: projectName, started: true }));
           }
