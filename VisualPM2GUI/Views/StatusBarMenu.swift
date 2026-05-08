@@ -192,7 +192,6 @@ struct StatusBarMenu: View {
                     }.buttonStyle(.plain).help("退出")
                 }
             }
-            .padding(.horizontal, 12)
             .padding(.vertical, 6)
 
             Divider()
@@ -249,7 +248,6 @@ struct StatusBarMenu: View {
                 }.buttonStyle(.plain)
             }
         }
-        .padding(.horizontal, 12)
         .padding(.vertical, 4)
     }
 
@@ -288,7 +286,7 @@ struct StatusBarMenu: View {
                                     )
                                         .id("flat-project-row-\(project.id)")
                                     if project.id != sortedListProjects.last?.id {
-                                        Divider().padding(.leading, 60)
+                                        Divider()
                                     }
                                 }
                             }
@@ -377,7 +375,6 @@ struct StatusBarMenu: View {
                                     .frame(width: 36)
                                     .disabled(pendingGroupToggles.contains(projectGroup))
                                 }
-                                .padding(.horizontal, 12)
                                 .padding(.vertical, 6)
                                 .background(Color.clear)
                                 .id("group-header-\(projectGroup)")
@@ -399,7 +396,7 @@ struct StatusBarMenu: View {
                                         )
                                             .id("group-project-row-\(item.project.id)")
                                         if item.project.id != groupProjects.last?.id {
-                                            Divider().padding(.leading, 60)
+                                            Divider()
                                         }
                                     }
                                 }
@@ -521,7 +518,6 @@ struct StatusBarMenu: View {
                     )
                 }
         }
-        .padding(.horizontal, 12)
         .padding(.vertical, 6)
     }
 

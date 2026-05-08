@@ -19,10 +19,8 @@ struct ProjectMenuItem: View {
         rowContent
         .padding(.vertical, 6)
         .background(
-            RoundedRectangle(cornerRadius: 8, style: .continuous)
-                .fill(hovering ? Color.secondary.opacity(0.1) : Color.clear)
+            Color.secondary.opacity(hovering ? 0.1 : 0)
         )
-        .padding(.horizontal, tableLayout ? 12 : 8)
         .animation(Animation.spring(response: 0.35, dampingFraction: 0.8), value: hovering)
         .onHover { hovering in
             self.hovering = hovering
