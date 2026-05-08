@@ -20,6 +20,20 @@ function debugLog(message) {
 const command = process.argv[2];
 const args = process.argv.slice(3);
 
+// 全局未捕获异常处理：确保始终输出 JSON 错误
+process.on('uncaughtException', (err) => {
+  console.error(JSON.stringify({ error: err.message || 'Unknown error' }));
+  try { pm2.disconnect(); } catch (_) {}
+  process.exit(1);
+});
+
+process.on('unhandledRejection', (reason) => {
+  const message = reason instanceof Error ? reason.message : String(reason);
+  console.error(JSON.stringify({ error: message }));
+  try { pm2.disconnect(); } catch (_) {}
+  process.exit(1);
+});
+
 function normalizePort(value) {
   const port = Number(value);
   if (Number.isInteger(port) && port > 0 && port < 65536) return port;
@@ -248,7 +262,9 @@ pm2.connect((err) => {
           // 检查是否是文件路径
           if (fs.existsSync(path.resolve(target))) {
             // 启动配置文件中的所有应用
-            const config = require(path.resolve(target));
+            const configPath = path.resolve(target);
+            const configDir = path.dirname(configPath);
+            const config = require(configPath);
             const apps = Array.isArray(config?.apps) ? config.apps : [];
             
             const list = await new Promise((resolve, reject) => {
@@ -265,10 +281,22 @@ pm2.connect((err) => {
                 continue;
               }
               
+              // 将相对路径解析为绝对路径（基于配置文件所在目录）
+              const resolvedApp = { ...app };
+              if (resolvedApp.cwd && !path.isAbsolute(resolvedApp.cwd)) {
+                resolvedApp.cwd = path.resolve(configDir, resolvedApp.cwd);
+              }
+              if (resolvedApp.error_file && !path.isAbsolute(resolvedApp.error_file)) {
+                resolvedApp.error_file = path.resolve(configDir, resolvedApp.error_file);
+              }
+              if (resolvedApp.out_file && !path.isAbsolute(resolvedApp.out_file)) {
+                resolvedApp.out_file = path.resolve(configDir, resolvedApp.out_file);
+              }
+              
               try {
                 // pm2.start(cmd, opts, cb) 使用回调模式，不返回 Promise
                 await new Promise((resolve, reject) => {
-                  pm2.start(app, (err, procs) => {
+                  pm2.start(resolvedApp, (err, procs) => {
                     if (err) reject(err);
                     else resolve(procs);
                   });
@@ -357,7 +385,7 @@ pm2.connect((err) => {
         if (err || !process || process.length === 0) {
           console.error(JSON.stringify({ error: err?.message || 'Process not found' }));
           pm2.disconnect();
-          return;
+          process.exit(1);
         }
         
         const proc = process[0];

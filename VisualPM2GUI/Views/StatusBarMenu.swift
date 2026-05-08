@@ -313,6 +313,7 @@ struct StatusBarMenu: View {
                                 let groupProjects = group.projects
                                 let isCollapsed = collapsedGroups.contains(projectGroup)
                                 let isGroupActive = groupProjects.contains { $0.isOnline }
+                                let hasErrored = groupProjects.contains { $0.isErrored }
 
                                 VStack(spacing: 0) {
                                     // Group header
@@ -328,6 +329,11 @@ struct StatusBarMenu: View {
                                                 Image(systemName: isCollapsed ? "chevron.right" : "chevron.down")
                                                     .font(.system(size: 11, weight: .bold))
                                                     .foregroundColor(.secondary)
+                                                if hasErrored {
+                                                    Image(systemName: "exclamationmark.triangle.fill")
+                                                        .font(.system(size: 10))
+                                                        .foregroundColor(.orange)
+                                                }
                                                 Text(projectGroup)
                                                     .font(.system(size: 12, weight: .semibold, design: .rounded))
                                                 Text("(\(groupProjects.count))")
