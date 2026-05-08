@@ -15,6 +15,7 @@ struct StatusBarMenu: View {
     @ObservedObject var state: AppState
     @State private var showingSettings = false
     @State private var collapsedGroups: Set<String> = []
+    @State private var pendingGroupToggles: Set<String> = []
     @State private var hasInitializedCollapsedGroups = false
     @State private var panelHeight: CGFloat = 400
     @State private var showGroupedView: Bool = true
@@ -201,7 +202,6 @@ struct StatusBarMenu: View {
 
             // Project list
             projectList
-                .frame(maxHeight: .infinity)
             
             // Drag handle
             Rectangle()
@@ -270,7 +270,6 @@ struct StatusBarMenu: View {
                 VStack(spacing: 0) {
                     listHeader
                     Divider()
-
                     ScrollView(.vertical, showsIndicators: false) {
                         LazyVStack(spacing: 0) {
                             if sortedListProjects.isEmpty {
@@ -297,6 +296,7 @@ struct StatusBarMenu: View {
                         .id("flat-project-list")
                     }
                 }
+                .frame(maxHeight: .infinity)
             } else {
                 let groupedItems = state.sortedGroupedProjects.map { group in
                     (id: "group-\(group.groupName)", name: group.groupName, projects: group.projects)
@@ -359,20 +359,23 @@ struct StatusBarMenu: View {
                                     .help("在 Finder 中打开")
 
                                     Toggle("", isOn: Binding(
-                                        get: { isGroupActive },
+                                        get: { isGroupActive || pendingGroupToggles.contains(projectGroup) },
                                         set: { isOn in
+                                            pendingGroupToggles.insert(projectGroup)
                                             Task {
                                                 if isOn {
                                                     await state.startProjectsInGroup(projectGroup)
                                                 } else {
                                                     await state.stopProjectsInGroup(projectGroup)
                                                 }
+                                                pendingGroupToggles.remove(projectGroup)
                                             }
                                         }
                                     ))
                                     .toggleStyle(.switch)
                                     .scaleEffect(0.7)
                                     .frame(width: 36)
+                                    .disabled(pendingGroupToggles.contains(projectGroup))
                                 }
                                 .padding(.horizontal, 12)
                                 .padding(.vertical, 6)
@@ -405,6 +408,7 @@ struct StatusBarMenu: View {
                     }
                     .id("grouped-project-list")
                 }
+                .frame(maxHeight: .infinity)
             }
         }
         .animation(.none, value: collapsedGroups)
