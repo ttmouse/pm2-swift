@@ -312,97 +312,113 @@ struct StatusBarMenu: View {
                                 let isGroupActive = groupProjects.contains { $0.isOnline }
                                 let hasErrored = groupProjects.contains { $0.isErrored }
 
-                                HStack(spacing: 8) {
-                                    Button(action: {
-                                        if isCollapsed {
-                                            collapsedGroups.remove(projectGroup)
-                                        } else {
-                                            collapsedGroups.insert(projectGroup)
-                                        }
-                                    }) {
-                                        HStack(spacing: 4) {
-                                            Image(systemName: isCollapsed ? "chevron.right" : "chevron.down")
-                                                .font(.system(size: 10, weight: .bold))
-                                                .foregroundColor(.secondary)
-                                            if hasErrored {
-                                                Image(systemName: "exclamationmark.triangle.fill")
-                                                    .font(.system(size: 10))
-                                                    .foregroundColor(.orange)
+                                VStack(spacing: 0) {
+                                    // Group header
+                                    HStack(spacing: 8) {
+                                        Button(action: {
+                                            if isCollapsed {
+                                                collapsedGroups.remove(projectGroup)
+                                            } else {
+                                                collapsedGroups.insert(projectGroup)
                                             }
-                                            Text("\(projectGroup) (\(groupProjects.count))")
-                                                .font(.caption)
-                                                .fontWeight(.semibold)
-                                        }
-                                    }
-                                    .buttonStyle(.plain)
-
-                                    Spacer()
-
-                                    Button(action: {
-                                        if let firstProject = groupProjects.first {
-                                            openInGhostty(path: firstProject.projectPath)
-                                        }
-                                    }) {
-                                        Image(systemName: "terminal")
-                                            .font(.system(size: 12))
-                                            .foregroundColor(.secondary)
-                                    }
-                                    .buttonStyle(.plain)
-                                    .help("在 Ghostty 中打开")
-
-                                    Button(action: {
-                                        if let firstProject = groupProjects.first {
-                                            openInFinder(path: firstProject.projectPath)
-                                        }
-                                    }) {
-                                        Image(systemName: "folder")
-                                            .font(.system(size: 12))
-                                            .foregroundColor(.secondary)
-                                    }
-                                    .buttonStyle(.plain)
-                                    .help("在 Finder 中打开")
-
-                                    Toggle("", isOn: Binding(
-                                        get: { isGroupActive || pendingGroupToggles.contains(projectGroup) },
-                                        set: { isOn in
-                                            pendingGroupToggles.insert(projectGroup)
-                                            Task {
-                                                if isOn {
-                                                    await state.startProjectsInGroup(projectGroup)
-                                                } else {
-                                                    await state.stopProjectsInGroup(projectGroup)
+                                        }) {
+                                            HStack(spacing: 4) {
+                                                Image(systemName: isCollapsed ? "chevron.right" : "chevron.down")
+                                                    .font(.system(size: 11, weight: .bold))
+                                                    .foregroundColor(.secondary)
+                                                if hasErrored {
+                                                    Image(systemName: "exclamationmark.triangle.fill")
+                                                        .font(.system(size: 10))
+                                                        .foregroundColor(.orange)
                                                 }
-                                                pendingGroupToggles.remove(projectGroup)
+                                                Text(projectGroup)
+                                                    .font(.system(size: 12, weight: .semibold, design: .rounded))
+                                                Text("(\(groupProjects.count))")
+                                                    .font(.caption)
+                                                    .foregroundColor(.secondary)
                                             }
                                         }
-                                    ))
-                                    .toggleStyle(.switch)
-                                    .scaleEffect(0.7)
-                                    .frame(width: 36)
-                                    .disabled(pendingGroupToggles.contains(projectGroup))
-                                }
-                                .padding(.vertical, 6)
-                                .background(Color.clear)
-                                .id("group-header-\(projectGroup)")
+                                        .buttonStyle(.plain)
 
-                                if !isCollapsed {
-                                    let projectItems = groupProjects.map { project in
-                                        (id: "group-project-\(project.id)", project: project)
+                                        Spacer()
+
+                                        Button(action: {
+                                            if let firstProject = groupProjects.first {
+                                                openInGhostty(path: firstProject.projectPath)
+                                            }
+                                        }) {
+                                            Image(systemName: "terminal")
+                                                .font(.system(size: 12))
+                                                .foregroundColor(.secondary)
+                                        }
+                                        .buttonStyle(.plain)
+                                        .help("在 Ghostty 中打开")
+
+                                        Button(action: {
+                                            if let firstProject = groupProjects.first {
+                                                openInFinder(path: firstProject.projectPath)
+                                            }
+                                        }) {
+                                            Image(systemName: "folder")
+                                                .font(.system(size: 12))
+                                                .foregroundColor(.secondary)
+                                        }
+                                        .buttonStyle(.plain)
+                                        .help("在 Finder 中打开")
+
+                                        Toggle("", isOn: Binding(
+                                            get: { isGroupActive || pendingGroupToggles.contains(projectGroup) },
+                                            set: { isOn in
+                                                pendingGroupToggles.insert(projectGroup)
+                                                Task {
+                                                    if isOn {
+                                                        await state.startProjectsInGroup(projectGroup)
+                                                    } else {
+                                                        await state.stopProjectsInGroup(projectGroup)
+                                                    }
+                                                    pendingGroupToggles.remove(projectGroup)
+                                                }
+                                            }
+                                        ))
+                                        .toggleStyle(.switch)
+                                        .scaleEffect(0.7)
+                                        .frame(width: 36)
+                                        .disabled(pendingGroupToggles.contains(projectGroup))
                                     }
-                                    ForEach(projectItems, id: \.id) { item in
-                                        ProjectMenuItem(
-                                            project: item.project,
-                                            state: state,
-                                            tableLayout: true,
-                                            nameColumnWidth: nameColumnWidth,
-                                            portColumnWidth: portColumnWidth,
-                                            statusColumnWidth: statusColumnWidth,
-                                            uptimeColumnWidth: uptimeColumnWidth,
-                                            actionsColumnWidth: actionsColumnWidth
-                                        )
-                                            .id("group-project-row-\(item.project.id)")
-                                        if item.project.id != groupProjects.last?.id {
-                                            Divider()
+                                    .padding(.horizontal, 12)
+                                    .padding(.vertical, 8)
+                                    .background(Color.secondary.opacity(0.06))
+                                    .overlay(alignment: .leading) {
+                                        if isGroupActive {
+                                            Rectangle()
+                                                .fill(Color.accentColor)
+                                                .frame(width: 3)
+                                        }
+                                    }
+                                    .id("group-header-\(projectGroup)")
+
+                                    if !isCollapsed {
+                                        let projectItems = groupProjects.map { project in
+                                            (id: "group-project-\(project.id)", project: project)
+                                        }
+                                        ForEach(projectItems, id: \.id) { item in
+                                            ProjectMenuItem(
+                                                project: item.project,
+                                                state: state,
+                                                tableLayout: true,
+                                                nameColumnWidth: nameColumnWidth,
+                                                portColumnWidth: portColumnWidth,
+                                                statusColumnWidth: statusColumnWidth,
+                                                uptimeColumnWidth: uptimeColumnWidth,
+                                                actionsColumnWidth: actionsColumnWidth,
+                                                isGrouped: true
+                                            )
+                                                .id("group-project-row-\(item.project.id)")
+                                            if item.project.id != groupProjects.last?.id {
+                                                Divider().padding(.leading, 74)
+                                            }
+                                        }
+                                    }
                                         }
                                     }
                                 }

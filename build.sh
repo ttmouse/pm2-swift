@@ -63,6 +63,10 @@ cp "$PROJECT_DIR/VisualPM2GUI/Info.plist" "$APP_BUNDLE/Contents/"
 echo "📦 Copying scripts..."
 mkdir -p "$APP_BUNDLE/Contents/Resources/scripts"
 cp -r "$PROJECT_DIR/scripts"/* "$APP_BUNDLE/Contents/Resources/scripts/"
+if [ -d "$PROJECT_DIR/scripts/node_modules" ]; then
+    cp -r "$PROJECT_DIR/scripts/node_modules" "$APP_BUNDLE/Contents/Resources/scripts/"
+    echo "  ✅ node_modules copied"
+fi
 
 # Set executable permissions
 chmod +x "$APP_BUNDLE/Contents/MacOS/$APP_NAME"
