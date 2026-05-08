@@ -36,18 +36,28 @@ function normalizeArgs(args) {
 function extractPortFromArgs(args) {
   const argText = Array.isArray(args) ? args.join(' ') : String(args || '');
   if (!argText) return null;
-  
+
+  // 模式匹配顺序很重要：从最具体到最不具体
   const patterns = [
-    /--port\s+(\d{2,5})/i,
-    /--port=(\d{2,5})/i,
-    /\bhttp\.server\s+(\d{2,5})\b/i,
+    // uvicorn/fastapi 格式: --port 18920 或 --port=18920
+    /--port[=\s]+(\d{4,5})/i,
+    // 独立格式: python -m http.server 3456
+    /\bhttp\.server\s+(\d{4,5})\b/i,
+    // npx serve 格式: -l 7373 或 --listen 7373
+    /(?:-(?:l|listen)|--(?:listen))\s+(\d{4,5})\b/i,
+    // 简写 -p: uvicorn main:app -p 8000
+    /(?<![-\w])-(?:p|port)\s+(\d{4,5})\b/i,
+    // Streamlit: server.port 格式
+    /server\.port[=\s]+(\d{4,5})/i,
   ];
-  
+
   for (const pattern of patterns) {
     const match = argText.match(pattern);
-    if (match) {
+    if (match && match[1]) {
       const port = normalizePort(match[1]);
-      if (port !== null) return port;
+      if (port !== null) {
+        return port;
+      }
     }
   }
   return null;
