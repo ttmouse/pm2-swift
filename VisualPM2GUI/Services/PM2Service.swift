@@ -86,7 +86,7 @@ class PM2Service: PM2ServiceProtocol {
             .appendingPathComponent("pm2_wrapper.js")
             .path
         
-        let candidates = [fileBased, bundleBased].compactMap { $0 }
+        let candidates = [bundleBased, fileBased].compactMap { $0 }
         for path in candidates where FileManager.default.fileExists(atPath: path) {
             return path
         }
