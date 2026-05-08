@@ -1,0 +1,370 @@
+import Foundation
+
+// MARK: - PM2 Service Error
+enum PM2ServiceError: Error, LocalizedError {
+    case nodeNotFound
+    case scriptNotFound
+    case commandFailed(String)
+    case invalidResponse
+    case portDetectionFailed
+    
+    var errorDescription: String? {
+        switch self {
+        case .nodeNotFound:
+            return "Node.js not found. Please install Node.js."
+        case .scriptNotFound:
+            return "PM2 wrapper script not found."
+        case .commandFailed(let command):
+            return "Command '\(command)' failed."
+        case .invalidResponse:
+            return "Invalid response from PM2."
+        case .portDetectionFailed:
+            return "Failed to detect port."
+        }
+    }
+}
+
+// MARK: - PM2 Service Protocol
+protocol PM2ServiceProtocol {
+    func fetchProjects() async throws -> [PM2Project]
+    func startProject(_ id: String) async throws
+    func stopProject(_ id: String) async throws
+    func restartProject(_ id: String) async throws
+    func deleteProject(_ id: String) async throws
+    func fetchLogs(for id: String, lines: Int) async throws -> String
+    func flushLogs() async throws
+}
+
+// MARK: - PM2 Service
+class PM2Service: PM2ServiceProtocol {
+    private let nodePath: String
+    private let scriptPath: String
+    private let queue = DispatchQueue(label: "com.visualpm2.api", qos: .userInitiated)
+    private let debugLogPath = "/tmp/visual-pm2.log"
+
+    private var portCache: [Int: Int] = [:]
+    private var lastPortCacheTime: Date?
+    private let portCacheTTL: TimeInterval = 3.0
+
+    init() {
+        // Find Node.js path
+        let foundNodePath = PM2Service.findNodePath()
+        self.nodePath = foundNodePath ?? "/opt/homebrew/bin/node"
+
+        // Script path (multi-source fallback for different launch modes)
+        self.scriptPath = PM2Service.resolveScriptPath()
+        logDebug("init nodePath=\(self.nodePath) scriptPath=\(self.scriptPath)")
+    }
+
+    private static func resolveScriptPath() -> String {
+        let fileBased = URL(fileURLWithPath: #file)
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+            .appendingPathComponent("scripts")
+            .appendingPathComponent("pm2_wrapper.js")
+            .path
+
+        let bundleBased = Bundle.main.resourceURL?
+            .appendingPathComponent("scripts")
+            .appendingPathComponent("pm2_wrapper.js")
+            .path
+
+        let cwdBased = URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
+            .appendingPathComponent("scripts")
+            .appendingPathComponent("pm2_wrapper.js")
+            .path
+
+        let candidates = [fileBased, bundleBased, cwdBased].compactMap { $0 }
+
+        for path in candidates where FileManager.default.fileExists(atPath: path) {
+            return path
+        }
+
+        // Return first candidate for better diagnostics if none exists
+        return candidates.first ?? fileBased
+    }
+    
+    private static func findNodePath() -> String? {
+        let possiblePaths = [
+            "/opt/homebrew/bin/node",
+            "/usr/local/bin/node",
+            "/usr/bin/node",
+            "~/.nvm/versions/node/default/bin/node"
+        ]
+        
+        for path in possiblePaths {
+            if FileManager.default.fileExists(atPath: path.expandingTildeInPath) {
+                return path.expandingTildeInPath
+            }
+        }
+        
+        // Try which command
+        let task = Process()
+        task.launchPath = "/usr/bin/which"
+        task.arguments = ["node"]
+        
+        let pipe = Pipe()
+        task.standardOutput = pipe
+        task.launch()
+        task.waitUntilExit()
+        
+        if task.terminationStatus == 0,
+           let data = try? pipe.fileHandleForReading.readToEnd(),
+           let nodePath = String(data: data, encoding: .utf8)?.trimmingCharacters(in: .whitespacesAndNewlines) {
+            return nodePath
+        }
+        
+        return nil
+    }
+    
+    // MARK: - Fetch Projects
+    func fetchProjects() async throws -> [PM2Project] {
+        logDebug("fetchProjects start")
+        let jsonString = try await executePM2Command("list")
+
+        guard let data = jsonString.data(using: .utf8),
+              let projects = try? JSONDecoder().decode([PM2Project].self, from: data) else {
+            logDebug("fetchProjects decode failed")
+            throw PM2ServiceError.invalidResponse
+        }
+
+        logDebug("fetchProjects decoded count=\(projects.count)")
+
+        let pids = projects.compactMap { $0.pid }
+        let portMap = detectPortsBatch(pids: pids)
+
+        return projects.map { project in
+            var project = project
+            if let pid = project.pid {
+                project.port = portMap[pid]
+            }
+            return project
+        }
+    }
+    
+    // MARK: - Start/Stop/Restart/Delete
+    func startProject(_ id: String) async throws {
+        _ = try await executePM2Command("start", id)
+    }
+    
+    func stopProject(_ id: String) async throws {
+        _ = try await executePM2Command("stop", id)
+    }
+    
+    func restartProject(_ id: String) async throws {
+        _ = try await executePM2Command("restart", id)
+    }
+    
+    func deleteProject(_ id: String) async throws {
+        _ = try await executePM2Command("delete", id)
+    }
+    
+    // MARK: - Logs
+    func fetchLogs(for id: String, lines: Int = 100) async throws -> String {
+        return try await executePM2Command("logs", id, String(lines))
+    }
+    
+    func flushLogs() async throws {
+        _ = try await executePM2Command("flush")
+    }
+    
+    // MARK: - Execute PM2 Command
+    private func executePM2Command(_ arguments: String...) async throws -> String {
+        try await withCheckedThrowingContinuation { continuation in
+            queue.async {
+                do {
+                    let result = try self.executePM2CommandSync(arguments: arguments)
+                    continuation.resume(returning: result)
+                } catch {
+                    continuation.resume(throwing: error)
+                }
+            }
+        }
+    }
+    
+    private func executePM2CommandSync(arguments: [String]) throws -> String {
+        guard FileManager.default.fileExists(atPath: nodePath) else {
+            logDebug("execute node missing path=\(nodePath)")
+            throw PM2ServiceError.nodeNotFound
+        }
+
+        guard FileManager.default.fileExists(atPath: scriptPath) else {
+            logDebug("execute script missing path=\(scriptPath)")
+            throw PM2ServiceError.scriptNotFound
+        }
+
+        let task = Process()
+        task.launchPath = nodePath
+        task.arguments = [scriptPath] + arguments
+        logDebug("execute command=\(task.launchPath ?? "") args=\(task.arguments?.joined(separator: " ") ?? "")")
+        
+        let stdoutPipe = Pipe()
+        let stderrPipe = Pipe()
+        task.standardOutput = stdoutPipe
+        task.standardError = stderrPipe
+        
+        task.launch()
+        task.waitUntilExit()
+        
+        let stdoutData = stdoutPipe.fileHandleForReading.readDataToEndOfFile()
+        let stderrData = stderrPipe.fileHandleForReading.readDataToEndOfFile()
+        
+        if task.terminationStatus != 0 {
+            if let errorString = String(data: stderrData, encoding: .utf8) {
+                logDebug("execute failed status=\(task.terminationStatus) stderr=\(errorString)")
+            }
+            if let errorString = String(data: stderrData, encoding: .utf8),
+               let errorData = errorString.data(using: .utf8),
+               let errorDict = try? JSONSerialization.jsonObject(with: errorData) as? [String: Any],
+               let errorMessage = errorDict["error"] as? String {
+                throw PM2ServiceError.commandFailed(errorMessage)
+            }
+            throw PM2ServiceError.commandFailed("Unknown error")
+        }
+        
+        guard let output = String(data: stdoutData, encoding: .utf8) else {
+            logDebug("execute invalid utf8 output")
+            throw PM2ServiceError.invalidResponse
+        }
+
+        logDebug("execute success outputBytes=\(stdoutData.count)")
+        return output
+    }
+
+    private func logDebug(_ message: String) {
+        let line = "\(ISO8601DateFormatter().string(from: Date())) \(message)\n"
+        guard let data = line.data(using: .utf8) else { return }
+
+        if !FileManager.default.fileExists(atPath: debugLogPath) {
+            FileManager.default.createFile(atPath: debugLogPath, contents: nil)
+        }
+
+        if let handle = FileHandle(forWritingAtPath: debugLogPath) {
+            defer { try? handle.close() }
+            try? handle.seekToEnd()
+            try? handle.write(contentsOf: data)
+        }
+    }
+    
+    // MARK: - Port Detection
+    private func detectPortsBatch(pids: [Int]) -> [Int: Int] {
+        if pids.isEmpty { return [:] }
+
+        let now = Date()
+        if let lastCache = lastPortCacheTime, now.timeIntervalSince(lastCache) < portCacheTTL {
+            return pids.reduce(into: [:]) { $0[$1] = portCache[$1]; return $0 }
+        }
+
+        let pidsString = pids.map { String($0) }.joined(separator: ",")
+        let task = Process()
+        task.launchPath = "/usr/sbin/lsof"
+        task.arguments = ["-nP", "-iTCP", "-sTCP:LISTEN", "-p", pidsString]
+
+        let pipe = Pipe()
+        task.standardOutput = pipe
+        task.standardError = Pipe()
+
+        task.launch()
+        task.waitUntilExit()
+
+        guard task.terminationStatus == 0 else { return [:] }
+
+        let data = pipe.fileHandleForReading.readDataToEndOfFile()
+        guard let output = String(data: data, encoding: .utf8) else { return [:] }
+
+        var result: [Int: Int] = [:]
+        let lines = output.components(separatedBy: .newlines)
+
+        for line in lines {
+            let pattern = ":(\\d+)\\s*\\(LISTEN\\)"
+            guard let regex = try? NSRegularExpression(pattern: pattern) else { continue }
+
+            for match in regex.matches(in: line, range: NSRange(line.startIndex..., in: line)) {
+                if let portRange = Range(match.range(at: 1), in: line),
+                   let port = Int(String(line[portRange])) {
+                    result[pids.randomElement() ?? 0] = port
+                    break
+                }
+            }
+        }
+
+        portCache = result
+        lastPortCacheTime = now
+
+        return pids.reduce(into: [:]) { $0[$1] = portCache[$1]; return $0 }
+    }
+
+    private func detectPort(pid: Int) -> Int? {
+        if let lastCache = lastPortCacheTime,
+           Date().timeIntervalSince(lastCache) < portCacheTTL,
+           let cached = portCache[pid] {
+            return cached
+        }
+
+        let task = Process()
+        task.launchPath = "/usr/sbin/lsof"
+        task.arguments = ["-nP", "-iTCP", "-sTCP:LISTEN", "-p", String(pid)]
+
+        let pipe = Pipe()
+        task.standardOutput = pipe
+        task.standardError = Pipe()
+
+        task.launch()
+        task.waitUntilExit()
+
+        guard task.terminationStatus == 0 else { return nil }
+
+        let data = pipe.fileHandleForReading.readDataToEndOfFile()
+        guard let output = String(data: data, encoding: .utf8) else { return nil }
+
+        // Parse lsof output: "TCP *:18920 (LISTEN)"
+        let pattern = ":([0-9]+) \\(LISTEN\\)"
+        guard let regex = try? NSRegularExpression(pattern: pattern) else { return nil }
+
+        if let match = regex.firstMatch(in: output, range: NSRange(output.startIndex..., in: output)),
+           let portRange = Range(match.range(at: 1), in: output) {
+            let portString = String(output[portRange])
+            let port = Int(portString)
+            portCache[pid] = port
+            return port
+        }
+
+        return nil
+    }
+        let task = Process()
+        task.launchPath = "/usr/sbin/lsof"
+        task.arguments = ["-nP", "-iTCP", "-sTCP:LISTEN", "-p", String(pid)]
+        
+        let pipe = Pipe()
+        task.standardOutput = pipe
+        task.standardError = Pipe()
+        
+        task.launch()
+        task.waitUntilExit()
+        
+        guard task.terminationStatus == 0 else { return nil }
+        
+        let data = pipe.fileHandleForReading.readDataToEndOfFile()
+        guard let output = String(data: data, encoding: .utf8) else { return nil }
+        
+        // Parse lsof output: "TCP *:18920 (LISTEN)"
+        let pattern = ":([0-9]+) \\(LISTEN\\)"
+        guard let regex = try? NSRegularExpression(pattern: pattern) else { return nil }
+        
+        if let match = regex.firstMatch(in: output, range: NSRange(output.startIndex..., in: output)),
+           let portRange = Range(match.range(at: 1), in: output) {
+            let portString = String(output[portRange])
+            return Int(portString)
+        }
+        
+        return nil
+    }
+}
+
+// MARK: - String Extension
+extension String {
+    var expandingTildeInPath: String {
+        return NSString(string: self).expandingTildeInPath
+    }
+}

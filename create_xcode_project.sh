@@ -1,0 +1,441 @@
+#!/bin/bash
+
+# Create Xcode project for Visual PM2 GUI
+
+PROJECT_NAME="VisualPM2GUI"
+PROJECT_DIR="/Users/douba/Projects/XM/project/pm2-swift"
+SCHEME_NAME="VisualPM2GUI"
+
+cd "$PROJECT_DIR"
+
+# Create project file
+cat > "${PROJECT_NAME}.xcodeproj/project.pbxproj" << 'EOF'
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 56;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		A1000001000000000000001 /* VisualPM2GUIApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000002000000000000001 /* VisualPM2GUIApp.swift */; };
+		A1000003000000000000001 /* PM2Project.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000004000000000000001 /* PM2Project.swift */; };
+		A1000005000000000000001 /* PortPool.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000006000000000000001 /* PortPool.swift */; };
+		A1000007000000000000001 /* AppConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000008000000000000001 /* AppConfig.swift */; };
+		A1000009000000000000001 /* AppState.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000010000000000000001 /* AppState.swift */; };
+		A1000011000000000000001 /* PM2Service.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000012000000000000001 /* PM2Service.swift */; };
+		A1000013000000000000001 /* StatusBarMenu.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000014000000000000001 /* StatusBarMenu.swift */; };
+		A1000015000000000000001 /* ProjectMenuItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000016000000000000001 /* ProjectMenuItem.swift */; };
+		A1000017000000000000001 /* LogsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000018000000000000001 /* LogsView.swift */; };
+		A1000019000000000000001 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000020000000000000001 /* SettingsView.swift */; };
+		A1000021000000000000001 /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A1000022000000000000001 /* SwiftUI.framework */; };
+		A1000023000000000000001 /* Cocoa.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A1000024000000000000001 /* Cocoa.framework */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		A1000002000000000000001 /* VisualPM2GUIApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VisualPM2GUIApp.swift; sourceTree = "<group>"; };
+		A1000004000000000000001 /* PM2Project.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PM2Project.swift; sourceTree = "<group>"; };
+		A1000006000000000000001 /* PortPool.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PortPool.swift; sourceTree = "<group>"; };
+		A1000008000000000000001 /* AppConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppConfig.swift; sourceTree = "<group>"; };
+		A1000010000000000000001 /* AppState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppState.swift; sourceTree = "<group>"; };
+		A1000012000000000000001 /* PM2Service.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PM2Service.swift; sourceTree = "<group>"; };
+		A1000014000000000000001 /* StatusBarMenu.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatusBarMenu.swift; sourceTree = "<group>"; };
+		A1000016000000000000001 /* ProjectMenuItem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectMenuItem.swift; sourceTree = "<group>"; };
+		A1000018000000000000001 /* LogsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LogsView.swift; sourceTree = "<group>"; };
+		A1000020000000000000001 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		A1000025000000000000001 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		A1000026000000000000001 /* VisualPM2GUI.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = VisualPM2GUI.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		A1000022000000000000001 /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
+		A1000024000000000000001 /* Cocoa.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Cocoa.framework; path = System/Library/Frameworks/Cocoa.framework; sourceTree = SDKROOT; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		A1000027000000000000001 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A1000021000000000000001 /* SwiftUI.framework in Frameworks */,
+				A1000023000000000000001 /* Cocoa.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		A1000028000000000000001 = {
+			isa = PBXGroup;
+			children = (
+				A1000029000000000000001 /* VisualPM2GUI */,
+				A1000030000000000000001 /* Frameworks */,
+				A1000031000000000000001 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		A1000029000000000000001 /* VisualPM2GUI */ = {
+			isa = PBXGroup;
+			children = (
+				A1000032000000000000001 /* Models */,
+				A1000033000000000000001 /* Services */,
+				A1000034000000000000001 /* Views */,
+				A1000035000000000000001 /* Resources */,
+				A1000002000000000000001 /* VisualPM2GUIApp.swift */,
+				A1000025000000000000001 /* Info.plist */,
+			);
+			path = VisualPM2GUI;
+			sourceTree = "<group>";
+		};
+		A1000032000000000000001 /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				A1000004000000000000001 /* PM2Project.swift */,
+				A1000006000000000000001 /* PortPool.swift */,
+				A1000008000000000000001 /* AppConfig.swift */,
+				A1000010000000000000001 /* AppState.swift */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+		A1000033000000000000001 /* Services */ = {
+			isa = PBXGroup;
+			children = (
+				A1000012000000000000001 /* PM2Service.swift */,
+			);
+			path = Services;
+			sourceTree = "<group>";
+		};
+		A1000034000000000000001 /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				A1000014000000000000001 /* StatusBarMenu.swift */,
+				A1000016000000000000001 /* ProjectMenuItem.swift */,
+				A1000018000000000000001 /* LogsView.swift */,
+				A1000020000000000000001 /* SettingsView.swift */,
+			);
+			path = Views;
+			sourceTree = "<group>";
+		};
+		A1000035000000000000001 /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			path = Resources;
+			sourceTree = "<group>";
+		};
+		A1000030000000000000001 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				A1000022000000000000001 /* SwiftUI.framework */,
+				A1000024000000000000001 /* Cocoa.framework */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		A1000031000000000000001 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				A1000026000000000000001 /* VisualPM2GUI.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		A1000036000000000000001 /* VisualPM2GUI */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = A1000037000000000000001 /* Build configuration list for PBXNativeTarget "VisualPM2GUI" */;
+			buildPhases = (
+				A1000038000000000000001 /* Sources */,
+				A1000027000000000000001 /* Frameworks */,
+				A1000039000000000000001 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = VisualPM2GUI;
+			productName = VisualPM2GUI;
+			productReference = A1000026000000000000001 /* VisualPM2GUI.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		A1000040000000000000001 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 1500;
+				LastUpgradeCheck = 1500;
+				TargetAttributes = {
+					A1000036000000000000001 = {
+						CreatedOnToolsVersion = 15.0;
+					};
+				};
+			};
+			buildConfigurationList = A1000041000000000000001 /* Build configuration list for PBXProject "VisualPM2GUI" */;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = A1000028000000000000001;
+			productRefGroup = A1000031000000000000001 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				A1000036000000000000001 /* VisualPM2GUI */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		A1000039000000000000001 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		A1000038000000000000001 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A1000001000000000000001 /* VisualPM2GUIApp.swift in Sources */,
+				A1000003000000000000001 /* PM2Project.swift in Sources */,
+				A1000005000000000000001 /* PortPool.swift in Sources */,
+				A1000007000000000000001 /* AppConfig.swift in Sources */,
+				A1000009000000000000001 /* AppState.swift in Sources */,
+				A1000011000000000000001 /* PM2Service.swift in Sources */,
+				A1000013000000000000001 /* StatusBarMenu.swift in Sources */,
+				A1000015000000000000001 /* ProjectMenuItem.swift in Sources */,
+				A1000017000000000000001 /* LogsView.swift in Sources */,
+				A1000019000000000000001 /* SettingsView.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		A1000042000000000000001 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = macosx;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		A1000043000000000000001 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				SDKROOT = macosx;
+				SWIFT_COMPILATION_MODE = wholemodule;
+			};
+			name = Release;
+		};
+		A1000044000000000000001 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = "";
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_ASSET_PATHS = "";
+				DEVELOPMENT_TEAM = "";
+				ENABLE_HARDENED_RUNTIME = NO;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = VisualPM2GUI/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = "Visual PM2";
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.developer-tools";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.douba.visual-pm2-gui;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		A1000045000000000000001 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = "";
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_ASSET_PATHS = "";
+				DEVELOPMENT_TEAM = "";
+				ENABLE_HARDENED_RUNTIME = NO;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = VisualPM2GUI/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = "Visual PM2";
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.developer-tools";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.douba.visual-pm2-gui;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = macosx;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		A1000037000000000000001 /* Build configuration list for PBXNativeTarget "VisualPM2GUI" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A1000044000000000000001 /* Debug */,
+				A1000045000000000000001 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		A1000041000000000000001 /* Build configuration list for PBXProject "VisualPM2GUI" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A1000042000000000000001 /* Debug */,
+				A1000043000000000000001 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = A1000040000000000000001 /* Project object */;
+}
+EOF
+
+echo "✅ Xcode project created successfully!"
+echo "📂 Project location: $PROJECT_DIR"
+echo ""
+echo "Next steps:"
+echo "1. Install Node.js dependencies: cd scripts && npm install"
+echo "2. Open project: open VisualPM2GUI.xcodeproj"
+echo "3. Build and run: Press Cmd+R in Xcode"

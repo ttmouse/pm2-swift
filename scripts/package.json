@@ -1,0 +1,12 @@
+{
+  "name": "visual-pm2-gui-scripts",
+  "version": "1.0.0",
+  "description": "PM2 wrapper scripts for Visual PM2 GUI",
+  "main": "pm2_wrapper.js",
+  "scripts": {
+    "test": "node pm2_wrapper.js list"
+  },
+  "dependencies": {
+    "pm2": "^5.3.0"
+  }
+}

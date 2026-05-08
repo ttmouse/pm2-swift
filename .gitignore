@@ -1,0 +1,30 @@
+# Build output
+build/
+
+# Xcode
+*.xcuserstate
+*.xcuserdatad
+*.xcworkspace
+*.xccheckout
+*.moved-aside
+DerivedData/
+*.hmap
+*.ipa
+*.xcuserstate
+!.gitkeep
+
+# macOS
+.DS_Store
+*.DS_Store
+._*
+
+# Logs
+logs/
+
+# Node dependencies
+scripts/node_modules/
+
+# Temporary files
+*.swp
+*.swo
+*~
