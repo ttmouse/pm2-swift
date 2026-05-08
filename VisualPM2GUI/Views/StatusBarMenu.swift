@@ -192,7 +192,6 @@ struct StatusBarMenu: View {
                     }.buttonStyle(.plain).help("退出")
                 }
             }
-            .padding(.horizontal, 12)
             .padding(.vertical, 6)
 
             Divider()
@@ -202,7 +201,6 @@ struct StatusBarMenu: View {
 
             // Project list
             projectList
-                .frame(maxHeight: .infinity)
             
             // Drag handle
             Rectangle()
@@ -250,7 +248,6 @@ struct StatusBarMenu: View {
                 }.buttonStyle(.plain)
             }
         }
-        .padding(.horizontal, 12)
         .padding(.vertical, 4)
     }
 
@@ -271,7 +268,6 @@ struct StatusBarMenu: View {
                 VStack(spacing: 0) {
                     listHeader
                     Divider()
-
                     ScrollView(.vertical, showsIndicators: false) {
                         LazyVStack(spacing: 0) {
                             if sortedListProjects.isEmpty {
@@ -290,7 +286,7 @@ struct StatusBarMenu: View {
                                     )
                                         .id("flat-project-row-\(project.id)")
                                     if project.id != sortedListProjects.last?.id {
-                                        Divider().padding(.leading, 60)
+                                        Divider()
                                     }
                                 }
                             }
@@ -298,6 +294,7 @@ struct StatusBarMenu: View {
                         .id("flat-project-list")
                     }
                 }
+                .frame(maxHeight: .infinity)
             } else {
                 let groupedItems = state.sortedGroupedProjects.map { group in
                     (id: "group-\(group.groupName)", name: group.groupName, projects: group.projects)
@@ -384,7 +381,6 @@ struct StatusBarMenu: View {
                                     .frame(width: 36)
                                     .disabled(pendingGroupToggles.contains(projectGroup))
                                 }
-                                .padding(.horizontal, 12)
                                 .padding(.vertical, 6)
                                 .background(Color.clear)
                                 .id("group-header-\(projectGroup)")
@@ -406,7 +402,7 @@ struct StatusBarMenu: View {
                                         )
                                             .id("group-project-row-\(item.project.id)")
                                         if item.project.id != groupProjects.last?.id {
-                                            Divider().padding(.leading, 60)
+                                            Divider()
                                         }
                                     }
                                 }
@@ -415,6 +411,7 @@ struct StatusBarMenu: View {
                     }
                     .id("grouped-project-list")
                 }
+                .frame(maxHeight: .infinity)
             }
         }
         .animation(.none, value: collapsedGroups)
@@ -527,7 +524,6 @@ struct StatusBarMenu: View {
                     )
                 }
         }
-        .padding(.horizontal, 12)
         .padding(.vertical, 6)
     }
 
