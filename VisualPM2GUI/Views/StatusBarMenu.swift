@@ -15,6 +15,7 @@ struct StatusBarMenu: View {
     @ObservedObject var state: AppState
     @State private var showingSettings = false
     @State private var collapsedGroups: Set<String> = []
+    @State private var pendingGroupToggles: Set<String> = []
     @State private var hasInitializedCollapsedGroups = false
     @State private var panelHeight: CGFloat = 400
     @State private var showGroupedView: Bool = true
@@ -312,6 +313,7 @@ struct StatusBarMenu: View {
                                 let groupProjects = group.projects
                                 let isCollapsed = collapsedGroups.contains(projectGroup)
                                 let isGroupActive = groupProjects.contains { $0.isOnline }
+                                let hasErrored = groupProjects.contains { $0.isErrored }
 
                                 HStack(spacing: 8) {
                                     Button(action: {
@@ -325,6 +327,11 @@ struct StatusBarMenu: View {
                                             Image(systemName: isCollapsed ? "chevron.right" : "chevron.down")
                                                 .font(.system(size: 10, weight: .bold))
                                                 .foregroundColor(.secondary)
+                                            if hasErrored {
+                                                Image(systemName: "exclamationmark.triangle.fill")
+                                                    .font(.system(size: 10))
+                                                    .foregroundColor(.orange)
+                                            }
                                             Text("\(projectGroup) (\(groupProjects.count))")
                                                 .font(.caption)
                                                 .fontWeight(.semibold)
@@ -359,20 +366,23 @@ struct StatusBarMenu: View {
                                     .help("在 Finder 中打开")
 
                                     Toggle("", isOn: Binding(
-                                        get: { isGroupActive },
+                                        get: { isGroupActive || pendingGroupToggles.contains(projectGroup) },
                                         set: { isOn in
+                                            pendingGroupToggles.insert(projectGroup)
                                             Task {
                                                 if isOn {
                                                     await state.startProjectsInGroup(projectGroup)
                                                 } else {
                                                     await state.stopProjectsInGroup(projectGroup)
                                                 }
+                                                pendingGroupToggles.remove(projectGroup)
                                             }
                                         }
                                     ))
                                     .toggleStyle(.switch)
                                     .scaleEffect(0.7)
                                     .frame(width: 36)
+                                    .disabled(pendingGroupToggles.contains(projectGroup))
                                 }
                                 .padding(.horizontal, 12)
                                 .padding(.vertical, 6)

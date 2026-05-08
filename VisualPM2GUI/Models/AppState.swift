@@ -355,6 +355,17 @@ class AppState: ObservableObject {
         for project in groupProjects {
             ConfigManager.shared.markProjectStarted(project.id)
         }
+        
+        // 聚合反馈：检查仍处于 stopped 的项目
+        if showNotifications {
+            let stillStopped = projects.filter { $0.projectGroupKey == projectGroupKey && !$0.isOnline }
+            if !stillStopped.isEmpty {
+                sendNotification(
+                    title: "\(projectGroupKey) 组启动部分失败",
+                    message: "\(stillStopped.count)/\(groupProjects.count) 个项目未能启动"
+                )
+            }
+        }
     }
 
     func stopProjectsInGroup(_ projectGroupKey: String) async {
@@ -371,6 +382,17 @@ class AppState: ObservableObject {
             config.stoppedProjects.insert(project.id)
         }
         ConfigManager.shared.updateConfig(config)
+        
+        // 聚合反馈：检查仍处于 online 的项目
+        if showNotifications {
+            let stillOnline = projects.filter { $0.projectGroupKey == projectGroupKey && $0.isOnline }
+            if !stillOnline.isEmpty {
+                sendNotification(
+                    title: "\(projectGroupKey) 组停止部分失败",
+                    message: "\(stillOnline.count)/\(groupProjects.count) 个项目未能停止"
+                )
+            }
+        }
     }
 
     func isGroupOnline(_ projectGroupKey: String) -> Bool {
