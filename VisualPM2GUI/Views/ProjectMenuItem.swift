@@ -114,6 +114,7 @@ struct ProjectMenuItem: View {
                 Image(systemName: project.isOnline ? "stop.fill" : "play.fill")
                     .font(.system(size: 10))
             }
+            .frame(width: 22, height: 22)
             .disabled(state.pendingStarts.contains(project.id) || state.pendingStops.contains(project.id))
 
             Button(action: {
@@ -122,12 +123,14 @@ struct ProjectMenuItem: View {
                 Image(systemName: "arrow.clockwise")
                     .font(.system(size: 10))
             }
+            .frame(width: 22, height: 22)
             .disabled(project.isStopped || state.pendingStarts.contains(project.id) || state.pendingStops.contains(project.id))
 
             Button(action: { showingLogs = true }) {
                 Image(systemName: "doc.text")
                     .font(.system(size: 10))
             }
+            .frame(width: 22, height: 22)
 
             Button(action: {
                 // 优先使用 resolvedURL（已知端口），其次 fullURL，最后猜测
@@ -142,9 +145,9 @@ struct ProjectMenuItem: View {
                 Image(systemName: "safari")
                     .font(.system(size: 10))
             }
+            .frame(width: 22, height: 22)
         }
         .buttonStyle(.plain)
-        .frame(width: 22, height: 22)
         .contentShape(Rectangle())
         .onHover { isHovering in
             if isHovering { NSCursor.pointingHand.push() }

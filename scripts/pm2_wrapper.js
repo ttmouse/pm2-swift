@@ -231,45 +231,81 @@ pm2.connect((err) => {
       break;
 
     case 'start':
-      // 只启动新项目，不影响已存在的
+      // 支持两种格式：
+      // 1. start <config-file-path> - 从配置文件启动所有应用
+      // 2. start <project-name> - 从默认配置启动指定项目
       (async () => {
         try {
           const target = args[0];
-          if (!target || !fs.existsSync(path.resolve(target))) {
-            console.error(JSON.stringify({ error: 'Config file not found' }));
+          
+          if (!target) {
+            console.error(JSON.stringify({ error: 'Target required' }));
             pm2.disconnect();
             process.exit(1);
           }
-
-          const config = require(path.resolve(target));
-          const apps = Array.isArray(config?.apps) ? config.apps : [];
           
-          // 获取已存在的进程
-          const list = await new Promise((resolve, reject) => {
-            pm2.list((err, list) => err ? reject(err) : resolve(list));
-          });
-          const existingNames = new Set(list.map(p => p.name).filter(Boolean));
-          
-          const results = [];
-          for (const app of apps) {
-            if (!app || !app.name) continue;
+          // 检查是否是文件路径
+          if (fs.existsSync(path.resolve(target))) {
+            // 启动配置文件中的所有应用
+            const config = require(path.resolve(target));
+            const apps = Array.isArray(config?.apps) ? config.apps : [];
             
-            if (existingNames.has(app.name)) {
-              results.push({ name: app.name, skipped: true, reason: 'already_running' });
-              continue;
+            const list = await new Promise((resolve, reject) => {
+              pm2.list((err, list) => err ? reject(err) : resolve(list));
+            });
+            const existingNames = new Set(list.map(p => p.name).filter(Boolean));
+            
+            const results = [];
+            for (const app of apps) {
+              if (!app || !app.name) continue;
+              
+              if (existingNames.has(app.name)) {
+                results.push({ name: app.name, skipped: true, reason: 'already_running' });
+                continue;
+              }
+              
+              try {
+                await new Promise((resolve, reject) => {
+                  pm2.start(app, (err) => err ? reject(err) : resolve());
+                });
+                results.push({ name: app.name, started: true });
+              } catch (e) {
+                results.push({ name: app.name, error: e.message });
+              }
             }
             
+            console.log(JSON.stringify({ success: true, results }));
+          } else {
+            // 尝试作为项目名称处理，从 ecosystem.config.js 查找
+            const projectName = target;
+            
+            // 加载 ecosystem 配置
+            let ecosystemApps = [];
             try {
-              await new Promise((resolve, reject) => {
-                pm2.start(app, (err) => err ? reject(err) : resolve());
-              });
-              results.push({ name: app.name, started: true });
+              const ecosystemConfig = require(ECOSYSTEM_CONFIG_PATH);
+              ecosystemApps = Array.isArray(ecosystemConfig?.apps) ? ecosystemConfig.apps : [];
             } catch (e) {
-              results.push({ name: app.name, error: e.message });
+              console.error(JSON.stringify({ error: 'Failed to load ecosystem config: ' + e.message }));
+              pm2.disconnect();
+              process.exit(1);
             }
+            
+            // 查找指定项目
+            const app = ecosystemApps.find(a => a && a.name === projectName);
+            if (!app) {
+              console.error(JSON.stringify({ error: 'Project not found: ' + projectName }));
+              pm2.disconnect();
+              process.exit(1);
+            }
+            
+            // 直接启动，不需要检查已存在（PM2 start 会自动处理）
+            await new Promise((resolve, reject) => {
+              pm2.start(app, (err) => err ? reject(err) : resolve());
+            });
+            
+            console.log(JSON.stringify({ success: true, name: projectName, started: true }));
           }
           
-          console.log(JSON.stringify({ success: true, results }));
           pm2.disconnect();
           process.exit(0);
         } catch (e) {
