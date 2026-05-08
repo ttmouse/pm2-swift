@@ -19,11 +19,10 @@ struct ProjectMenuItem: View {
     var body: some View {
         rowContent
         .padding(.vertical, 6)
-        .padding(.leading, isGrouped ? 14 : 0)
+        .padding(.leading, isGrouped ? 4 : 0)
         .background(
             Color.secondary.opacity(hovering ? 0.1 : 0)
         )
-        .animation(Animation.spring(response: 0.35, dampingFraction: 0.8), value: hovering)
         .onHover { hovering in
             self.hovering = hovering
         }
@@ -41,29 +40,36 @@ struct ProjectMenuItem: View {
     private var rowContent: some View {
         if tableLayout {
             HStack(spacing: 0) {
-                HStack(spacing: 6) {
-                    Circle()
-                        .fill(project.status.color)
-                        .frame(width: 8, height: 8)
+                // 状态列 - 状态点居中
+                Circle()
+                    .fill(project.status.color)
+                    .frame(width: 8, height: 8)
+                    .frame(width: statusColumnWidth, alignment: .center)
 
-                    Text(project.name)
-                        .font(.system(size: 13, weight: .medium, design: .rounded))
-                        .lineLimit(1)
-                }
-                .frame(width: nameColumnWidth, alignment: .leading)
+                // 服务名列 - 名称左对齐
+                Text(project.name)
+                    .font(.system(size: 13, weight: .medium, design: .rounded))
+                    .lineLimit(1)
+                    .frame(width: nameColumnWidth, alignment: .leading)
 
+                // 端口列 - 右对齐
                 Text(project.port.map { String($0) } ?? "-")
                     .font(.system(size: 11, design: .monospaced))
                     .foregroundColor(.secondary)
+                    .lineLimit(1)
+                    .multilineTextAlignment(.trailing)
                     .frame(width: portColumnWidth, alignment: .trailing)
 
-                Text(project.uptimeFormatted)
+                // 运行时长列 - 纯英文等宽，右对齐数字对齐
+                Text(project.uptimeFormattedCompact)
                     .font(.system(size: 11, design: .monospaced))
-                    .foregroundColor(.secondary.opacity(0.8))
+                    .foregroundColor(.secondary)
+                    .multilineTextAlignment(.trailing)
                     .frame(width: uptimeColumnWidth, alignment: .trailing)
 
                 Spacer(minLength: 8)
 
+                // 操作按钮列 - 右对齐
                 actionButtons
                     .frame(width: actionsColumnWidth, alignment: .trailing)
             }
@@ -86,8 +92,8 @@ struct ProjectMenuItem: View {
                         .foregroundColor(.secondary)
 
                     Text(project.uptimeFormatted)
-                        .font(.system(size: 11))
-                        .foregroundColor(.secondary.opacity(0.8))
+                        .font(.system(size: 11, design: .monospaced))
+                        .foregroundColor(.secondary)
                 }
                 .layoutPriority(1)
 

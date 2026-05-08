@@ -55,7 +55,6 @@ class AppState: ObservableObject {
             sortProjects()
         }
     }
-    @Published var showAdvancedInfo: Bool = false
     @Published var tableColumns: TableColumnWidths = .default
     
     // MARK: - User Intent Persistence (用户意图持久化)
@@ -156,77 +155,42 @@ class AppState: ObservableObject {
     }
     
     func startProject(_ id: String) async {
-        // 乐观UI：立即更新状态
-        pendingStarts.insert(id)
-        updateProjectStatus(id, to: .online)
+        let error = await _executeStartProject(id)
+        await refresh()
 
-        do {
-            try await pm2Service.startProject(id)
-
-            // 等待一小段时间让 PM2 完成启动
-            try await Task.sleep(nanoseconds: 300_000_000) // 0.3秒
-
-            // 清除pending状态并刷新
-            pendingStarts.remove(id)
-            await refresh()
-
-            // 从停止列表中移除（用户明确启动了）
-            ConfigManager.shared.markProjectStarted(id)
-
-            // 自动保存 PM2 状态
+        if let error = error {
+            self.error = error
+            if showNotifications {
+                sendNotification(title: "启动失败", message: error.localizedDescription)
+            }
+        } else {
             try? await pm2Service.saveState()
-
             if showNotifications {
                 let project = projects.first { $0.id == id }
                 sendNotification(title: "服务已启动", message: project?.name ?? id)
             }
-        } catch {
-            // 失败：回滚状态
-            pendingStarts.remove(id)
-            await refresh()
-            self.error = error
-            sendNotification(title: "启动失败", message: error.localizedDescription)
         }
     }
 
     func stopProject(_ id: String) async {
-        // 乐观UI：立即更新状态
-        pendingStops.insert(id)
-        updateProjectStatus(id, to: .stopped)
+        let error = await _executeStopProject(id)
+        await refresh()
 
-        do {
-            try await pm2Service.stopProject(id)
-
-            // 等待一小段时间让 PM2 完成停止
-            try await Task.sleep(nanoseconds: 200_000_000) // 0.2秒
-
-            // 清除pending状态并刷新
-            pendingStops.remove(id)
-            await refresh()
-
-            // 添加到停止列表（用户明确停止了）
-            ConfigManager.shared.markProjectStopped(id)
-
-            // 自动保存 PM2 状态
+        if let error = error {
+            self.error = error
+            if showNotifications {
+                sendNotification(title: "停止失败", message: error.localizedDescription)
+            }
+        } else {
             try? await pm2Service.saveState()
-
             if showNotifications {
                 let project = projects.first { $0.id == id }
                 sendNotification(title: "服务已停止", message: project?.name ?? id)
             }
-        } catch {
-            // 失败：回滚状态
-            pendingStops.remove(id)
-            await refresh()
-            self.error = error
-            sendNotification(title: "停止失败", message: error.localizedDescription)
         }
     }
 
     func restartProject(_ id: String) async {
-        // 乐观UI：立即显示重启中状态
-        updateProjectStatus(id, to: .launching)
-
         do {
             try await pm2Service.restartProject(id)
 
@@ -249,13 +213,38 @@ class AppState: ObservableObject {
         }
     }
 
-    // MARK: - Helper: 乐观UI更新
-    // Note: PM2Project is a struct with let properties, so true optimistic UI
-    // requires architectural changes. Currently relies on refresh after operations.
-    // The pendingStarts/pendingStops sets are used for count calculations.
-    private func updateProjectStatus(_ id: String, to status: ProcessStatus) {
-        // Stub: actual status comes from PM2 after refresh()
-        // Optimistic UI is handled via pendingStarts/pendingStops sets
+    // MARK: - 私有执行方法（无通知、无刷新，由调用方聚合）
+
+    /// 执行启动操作，返回 Error?（nil 表示成功）
+    @discardableResult
+    private func _executeStartProject(_ id: String) async -> Error? {
+        pendingStarts.insert(id)
+        do {
+            try await pm2Service.startProject(id)
+            try await Task.sleep(nanoseconds: 300_000_000) // 0.3s 等待 PM2 稳定
+            pendingStarts.remove(id)
+            ConfigManager.shared.markProjectStarted(id)
+            return nil
+        } catch {
+            pendingStarts.remove(id)
+            return error
+        }
+    }
+
+    /// 执行停止操作，返回 Error?（nil 表示成功）
+    @discardableResult
+    private func _executeStopProject(_ id: String) async -> Error? {
+        pendingStops.insert(id)
+        do {
+            try await pm2Service.stopProject(id)
+            try await Task.sleep(nanoseconds: 200_000_000) // 0.2s 等待 PM2 稳定
+            pendingStops.remove(id)
+            ConfigManager.shared.markProjectStopped(id)
+            return nil
+        } catch {
+            pendingStops.remove(id)
+            return error
+        }
     }
 
     func openProjectURL(_ project: PM2Project) async {
@@ -345,24 +334,40 @@ class AppState: ObservableObject {
 
     func startProjectsInGroup(_ projectGroupKey: String) async {
         let groupProjects = projects.filter { $0.projectGroupKey == projectGroupKey && !$0.isOnline }
-        await withTaskGroup(of: Void.self) { group in
+        guard !groupProjects.isEmpty else { return }
+
+        // 并行启动组内所有 offline 项目，收集错误
+        var errors: [(String, Error)] = []
+
+        await withTaskGroup(of: (String, Error?).self) { group in
             for project in groupProjects {
-                group.addTask { await self.startProject(project.id) }
+                group.addTask {
+                    let error = await self._executeStartProject(project.id)
+                    return (project.id, error)
+                }
+            }
+            for await result in group {
+                if let error = result.1 {
+                    errors.append((result.0, error))
+                }
             }
         }
-        
-        // 从停止列表中移除整个组
-        for project in groupProjects {
-            ConfigManager.shared.markProjectStarted(project.id)
-        }
-        
-        // 聚合反馈：检查仍处于 stopped 的项目
+
+        // 一次刷新、一次保存
+        await refresh()
+        try? await pm2Service.saveState()
+
+        // 聚合通知：全部成功 or 部分失败
         if showNotifications {
-            let stillStopped = projects.filter { $0.projectGroupKey == projectGroupKey && !$0.isOnline }
-            if !stillStopped.isEmpty {
+            if errors.isEmpty {
+                sendNotification(
+                    title: "\(projectGroupKey) 组启动完成",
+                    message: "\(groupProjects.count) 个项目已全部启动"
+                )
+            } else {
                 sendNotification(
                     title: "\(projectGroupKey) 组启动部分失败",
-                    message: "\(stillStopped.count)/\(groupProjects.count) 个项目未能启动"
+                    message: errors.map { "\($0.0): \($0.1.localizedDescription)" }.joined(separator: "\n")
                 )
             }
         }
@@ -370,26 +375,47 @@ class AppState: ObservableObject {
 
     func stopProjectsInGroup(_ projectGroupKey: String) async {
         let groupProjects = projects.filter { $0.projectGroupKey == projectGroupKey && $0.isOnline }
-        await withTaskGroup(of: Void.self) { group in
+        guard !groupProjects.isEmpty else { return }
+
+        // 并行停止组内所有 online 项目，收集错误
+        var errors: [(String, Error)] = []
+
+        await withTaskGroup(of: (String, Error?).self) { group in
             for project in groupProjects {
-                group.addTask { await self.stopProject(project.id) }
+                group.addTask {
+                    let error = await self._executeStopProject(project.id)
+                    return (project.id, error)
+                }
+            }
+            for await result in group {
+                if let error = result.1 {
+                    errors.append((result.0, error))
+                }
             }
         }
-        
-        // 添加整个组到停止列表
+
+        // 持久化组停止意图（_executeStopProject 已标记单个项目，此处补充整体同步）
         var config = ConfigManager.shared.getConfig()
         for project in groupProjects {
             config.stoppedProjects.insert(project.id)
         }
         ConfigManager.shared.updateConfig(config)
-        
-        // 聚合反馈：检查仍处于 online 的项目
+
+        // 一次刷新、一次保存
+        await refresh()
+        try? await pm2Service.saveState()
+
+        // 聚合通知：全部成功 or 部分失败
         if showNotifications {
-            let stillOnline = projects.filter { $0.projectGroupKey == projectGroupKey && $0.isOnline }
-            if !stillOnline.isEmpty {
+            if errors.isEmpty {
+                sendNotification(
+                    title: "\(projectGroupKey) 组停止完成",
+                    message: "\(groupProjects.count) 个项目已全部停止"
+                )
+            } else {
                 sendNotification(
                     title: "\(projectGroupKey) 组停止部分失败",
-                    message: "\(stillOnline.count)/\(groupProjects.count) 个项目未能停止"
+                    message: errors.map { "\($0.0): \($0.1.localizedDescription)" }.joined(separator: "\n")
                 )
             }
         }
@@ -514,7 +540,6 @@ class AppState: ObservableObject {
         case .memory: self.sortOrder = .memory
         case .uptime: self.sortOrder = .uptime
         }
-        self.showAdvancedInfo = config.showAdvancedInfo
         self.portPool = config.portPool
         self.tableColumns = config.tableColumns
     }
@@ -540,7 +565,6 @@ class AppState: ObservableObject {
             case .memory: config.sortOrder = .memory
             case .uptime: config.sortOrder = .uptime
             }
-            config.showAdvancedInfo = showAdvancedInfo
             config.portPool = portPool
             config.tableColumns = tableColumns
             
@@ -563,7 +587,6 @@ class AppState: ObservableObject {
         case .memory: config.sortOrder = .memory
         case .uptime: config.sortOrder = .uptime
         }
-        config.showAdvancedInfo = showAdvancedInfo
         config.portPool = portPool
         config.tableColumns = tableColumns
         

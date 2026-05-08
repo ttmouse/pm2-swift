@@ -106,3 +106,17 @@ scripts/
 Types: fix, feat, docs, chore, refactor
 Scopes: pm2-swift, pm2, configs
 ```
+
+## Agent skills
+
+### Issue tracker
+
+Issues tracked as local markdown files under `.scratch/`. See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Five canonical roles with default label names. See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Single-context layout. See `docs/agents/domain.md`.

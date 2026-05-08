@@ -149,7 +149,7 @@ struct StatusBarMenu: View {
                         }
                         .padding(.horizontal, 8)
                         .padding(.vertical, 4)
-                        .background(state.selectedTab == tab ? Color.accentColor.opacity(0.15) : Color.clear)
+                        .background(state.selectedTab == tab ? ElectricBlue.base.opacity(0.15) : Color.clear)
                         .cornerRadius(4)
                     }
                     .buttonStyle(.plain)
@@ -192,6 +192,7 @@ struct StatusBarMenu: View {
                     }.buttonStyle(.plain).help("退出")
                 }
             }
+            .padding(.horizontal, 10)
             .padding(.vertical, 6)
 
             Divider()
@@ -248,6 +249,7 @@ struct StatusBarMenu: View {
                 }.buttonStyle(.plain)
             }
         }
+        .padding(.horizontal, 10)
         .padding(.vertical, 4)
     }
 
@@ -285,6 +287,7 @@ struct StatusBarMenu: View {
                                         actionsColumnWidth: actionsColumnWidth
                                     )
                                         .id("flat-project-row-\(project.id)")
+                                        .padding(.horizontal, 10)
                                     if project.id != sortedListProjects.last?.id {
                                         Divider()
                                     }
@@ -323,9 +326,6 @@ struct StatusBarMenu: View {
                                             }
                                         }) {
                                             HStack(spacing: 4) {
-                                                Image(systemName: isCollapsed ? "chevron.right" : "chevron.down")
-                                                    .font(.system(size: 11, weight: .bold))
-                                                    .foregroundColor(.secondary)
                                                 if hasErrored {
                                                     Image(systemName: "exclamationmark.triangle.fill")
                                                         .font(.system(size: 10))
@@ -385,13 +385,13 @@ struct StatusBarMenu: View {
                                         .frame(width: 36)
                                         .disabled(pendingGroupToggles.contains(projectGroup))
                                     }
-                                    .padding(.horizontal, 12)
+                                    .padding(.horizontal, 10)
                                     .padding(.vertical, 8)
                                     .background(Color.secondary.opacity(0.06))
                                     .overlay(alignment: .leading) {
                                         if isGroupActive {
                                             Rectangle()
-                                                .fill(Color.accentColor)
+                                                .fill(ElectricBlue.base)
                                                 .frame(width: 3)
                                         }
                                     }
@@ -405,20 +405,13 @@ struct StatusBarMenu: View {
                                             ProjectMenuItem(
                                                 project: item.project,
                                                 state: state,
-                                                tableLayout: true,
-                                                nameColumnWidth: nameColumnWidth,
-                                                portColumnWidth: portColumnWidth,
-                                                statusColumnWidth: statusColumnWidth,
-                                                uptimeColumnWidth: uptimeColumnWidth,
-                                                actionsColumnWidth: actionsColumnWidth,
+                                                tableLayout: false,
                                                 isGrouped: true
                                             )
                                                 .id("group-project-row-\(item.project.id)")
                                             if item.project.id != groupProjects.last?.id {
-                                                Divider().padding(.leading, 74)
+                                                Divider()
                                             }
-                                        }
-                                    }
                                         }
                                     }
                                 }
@@ -481,14 +474,25 @@ struct StatusBarMenu: View {
 
     private var listHeader: some View {
         HStack(spacing: 0) {
+            // 状态列
+            resizableHeaderColumn(
+                width: statusColumnWidth,
+                dragStart: $dragStartStatusWidth,
+                title: {
+                    sortHeaderButton(title: "状态", key: .status)
+                },
+                alignment: .center,
+                onWidthChange: { width in
+                    updateStatusColumnWidth(width)
+                }
+            )
+
+            // 服务名列
             resizableHeaderColumn(
                 width: nameColumnWidth,
                 dragStart: $dragStartNameWidth,
                 title: {
-                    HStack(spacing: 10) {
-                        sortHeaderButton(title: "状态", key: .status)
-                        sortHeaderButton(title: "服务", key: .name)
-                    }
+                    sortHeaderButton(title: "服务", key: .name)
                 },
                 alignment: .leading,
                 onWidthChange: { width in
@@ -496,6 +500,7 @@ struct StatusBarMenu: View {
                 }
             )
 
+            // 端口列
             resizableHeaderColumn(
                 width: portColumnWidth,
                 dragStart: $dragStartPortWidth,
@@ -508,6 +513,7 @@ struct StatusBarMenu: View {
                 }
             )
 
+            // 运行时长列
             resizableHeaderColumn(
                 width: uptimeColumnWidth,
                 dragStart: $dragStartUptimeWidth,
@@ -540,6 +546,7 @@ struct StatusBarMenu: View {
                     )
                 }
         }
+        .padding(.horizontal, 10)
         .padding(.vertical, 6)
     }
 
@@ -590,7 +597,7 @@ struct StatusBarMenu: View {
 
     private func updateNameColumnWidth(_ width: CGFloat) {
         updateTableColumns {
-            $0.name = Double(clamp(width, min: 160, max: 420))
+            $0.name = Double(clamp(width, min: 100, max: 420))
         }
     }
 
@@ -602,7 +609,7 @@ struct StatusBarMenu: View {
 
     private func updateStatusColumnWidth(_ width: CGFloat) {
         updateTableColumns {
-            $0.status = Double(clamp(width, min: 64, max: 160))
+            $0.status = Double(clamp(width, min: 40, max: 80))
         }
     }
 

@@ -1,6 +1,4 @@
 import Foundation
-import AppKit
-import SwiftUI
 
 // MARK: - Discovered App (新发现的项目)
 struct DiscoveredApp: Identifiable, Codable {
@@ -37,16 +35,6 @@ enum ProcessStatus: String, Codable {
         default:
             // 未知状态默认为 stopped
             self = .stopped
-        }
-    }
-
-    var color: Color {
-        switch self {
-        case .online: return Color(nsColor: .systemGreen)
-        case .stopped: return Color(nsColor: .systemGray)
-        case .errored, .waitingRestart: return Color(nsColor: .systemOrange)
-        case .launching: return Color(nsColor: .systemYellow)
-        case .oneLaunchStatus: return Color(nsColor: .systemGray)
         }
     }
 
@@ -191,6 +179,24 @@ struct PM2Project: Identifiable, Codable, Equatable {
         formatter.allowedUnits = [.day, .hour, .minute, .second]
         formatter.unitsStyle = .abbreviated
         return formatter.string(from: uptime) ?? "0s"
+    }
+
+    /// 纯 ASCII 格式运行时间，用于表格等宽布局
+    var uptimeFormattedCompact: String {
+        let days = Int(uptime) / 86400
+        let hours = (Int(uptime) % 86400) / 3600
+        let minutes = (Int(uptime) % 3600) / 60
+        let seconds = Int(uptime) % 60
+
+        if days > 0 {
+            return "\(days)d \(hours)h \(minutes)m \(seconds)s"
+        } else if hours > 0 {
+            return "\(hours)h \(minutes)m \(seconds)s"
+        } else if minutes > 0 {
+            return "\(minutes)m \(seconds)s"
+        } else {
+            return "\(seconds)s"
+        }
     }
 
     var projectGroupKey: String {

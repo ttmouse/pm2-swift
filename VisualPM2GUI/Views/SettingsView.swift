@@ -4,7 +4,21 @@ import SwiftUI
 struct SettingsView: View {
     @ObservedObject var state: AppState
     @Environment(\.dismiss) private var dismiss
-    @State private var selectedTab: Int? = 1
+    @State private var selectedTab: SettingsTab = .general
+    
+    enum SettingsTab: String, CaseIterable {
+        case general = "常规"
+        case network = "网络"
+        case about = "关于"
+        
+        var icon: String {
+            switch self {
+            case .general: return "gear"
+            case .network: return "network"
+            case .about: return "info.circle"
+            }
+        }
+    }
     
     var body: some View {
         VStack(spacing: 0) {
@@ -15,51 +29,38 @@ struct SettingsView: View {
                 
                 Spacer()
                 
-                Button(action: {
-                    dismiss()
-                }) {
+                Button(action: { dismiss() }) {
                     Image(systemName: "xmark.circle.fill")
                         .font(.system(size: 20))
+                        .foregroundColor(.secondary)
                 }
                 .buttonStyle(.plain)
             }
-            .padding()
+            .padding(.horizontal, 16)
+            .padding(.vertical, 10)
             
             Divider()
             
-            // Vertical Sidebar Navigation
-            NavigationView {
-                // Sidebar
-                List {
-                    NavigationLink(destination: generalSettings, tag: 1, selection: $selectedTab) {
-                        Label("常规", systemImage: "gear")
-                    }
-                    NavigationLink(destination: networkSettings, tag: 2, selection: $selectedTab) {
-                        Label("网络", systemImage: "network")
-                    }
-                    NavigationLink(destination: aboutSettings, tag: 3, selection: $selectedTab) {
-                        Label("关于", systemImage: "info.circle")
-                    }
+            // Sidebar + Detail
+            NavigationSplitView {
+                List(SettingsTab.allCases, id: \.self, selection: $selectedTab) { tab in
+                    Label(tab.rawValue, systemImage: tab.icon)
+                        .font(.system(size: 13))
+                        .padding(.vertical, 2)
                 }
-                .frame(minWidth: 150)
                 .listStyle(.sidebar)
-                
-                // Detail view
+                .frame(minWidth: 140)
+            } detail: {
                 Group {
                     switch selectedTab {
-                    case 1:
-                        generalSettings
-                    case 2:
-                        networkSettings
-                    case 3:
-                        aboutSettings
-                    default:
-                        generalSettings
+                    case .general: generalSettings
+                    case .network: networkSettings
+                    case .about: aboutSettings
                     }
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
-            .frame(width: 600, height: 420)
+            .frame(height: 420)
         }
         .frame(width: 600, height: 450)
         .onDisappear {
@@ -71,82 +72,59 @@ struct SettingsView: View {
     @ViewBuilder
     private var generalSettings: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 20) {
-                Text("常规设置")
-                    .font(.title2)
-                    .fontWeight(.bold)
-                
-                Divider()
-                
-                // Auto refresh
-                Toggle("自动刷新", isOn: $state.autoRefresh)
-                    .help("自动刷新服务状态")
-                
-                // Refresh interval
-                HStack {
-                    Text("刷新间隔")
-                        .frame(width: 120, alignment: .leading)
+            VStack(alignment: .leading, spacing: 0) {
+                SectionView(title: "刷新") {
+                    Toggle("自动刷新", isOn: $state.autoRefresh)
                     
-                    Slider(value: $state.refreshInterval, in: 1...60, step: 1) {
+                    HStack {
                         Text("刷新间隔")
+                            .frame(width: 100, alignment: .leading)
+                        Slider(value: $state.refreshInterval, in: 1...60, step: 1)
+                        Text("\(Int(state.refreshInterval))秒")
+                            .font(AppFont.monoData)
+                            .frame(width: 40, alignment: .trailing)
                     }
-                    
-                    Text("\(Int(state.refreshInterval))秒")
-                        .frame(width: 50)
+                    .disabled(!state.autoRefresh)
                 }
-                .help("自动刷新的时间间隔")
                 
-                Divider()
+                SectionView(title: "通知") {
+                    Toggle("显示通知", isOn: $state.showNotifications)
+                }
                 
-                // Notifications
-                Toggle("显示通知", isOn: $state.showNotifications)
-                    .help("服务状态变化时显示通知")
+                SectionView(title: "布局") {
+                    Toggle("紧凑模式", isOn: $state.compactMode)
+                }
                 
-                Divider()
-                
-                // Compact mode
-                Toggle("紧凑模式", isOn: $state.compactMode)
-                    .help("使用更紧凑的界面布局")
-                
-                Divider()
-                
-                // Advanced info
-                Toggle("显示高级信息", isOn: $state.showAdvancedInfo)
-                    .help("显示 CPU、内存、PID 等高级信息")
-                
-                Divider()
-                
-                // Sort order
-                HStack {
-                    Text("排序方式")
-                        .frame(width: 120, alignment: .leading)
-                    
-                    Picker("排序方式", selection: $state.sortOrder) {
-                        ForEach(AppState.SortOrder.allCases, id: \.self) { order in
-                            Text(order.rawValue).tag(order)
+                SectionView(title: "排序") {
+                    HStack {
+                        Text("排序方式")
+                            .frame(width: 100, alignment: .leading)
+                        Picker("排序方式", selection: $state.sortOrder) {
+                            ForEach(AppState.SortOrder.allCases, id: \.self) { order in
+                                Text(order.rawValue).tag(order)
+                            }
                         }
+                        .pickerStyle(.menu)
                     }
-                    .pickerStyle(.menu)
                 }
                 
-                Spacer()
+                Divider()
+                    .padding(.vertical, 8)
                 
-                // Reset button
                 HStack {
                     Spacer()
-                    
-                    Button("重置所有设置") {
+                    Button("重置默认") {
                         state.autoRefresh = true
                         state.refreshInterval = 5.0
                         state.showNotifications = true
                         state.compactMode = false
                         state.sortOrder = .name
-                        state.showAdvancedInfo = false
                     }
                     .buttonStyle(.bordered)
+                    .controlSize(.small)
                 }
             }
-            .padding()
+            .padding(16)
         }
     }
     
@@ -154,75 +132,59 @@ struct SettingsView: View {
     @ViewBuilder
     private var networkSettings: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 20) {
-                Text("网络设置")
-                    .font(.title2)
-                    .fontWeight(.bold)
-                
-                Divider()
-                
-                Text("端口范围配置")
-                    .font(.headline)
-                
-                // API ports
-                HStack {
-                    Text("API 端口范围:")
-                        .frame(width: 140, alignment: .leading)
-
-                    Text("\(state.portPool.apiRange.lower) - \(state.portPool.apiRange.upper)")
-                        .font(.system(.body, design: .monospaced))
-                        .foregroundColor(.secondary)
-                }
-
-                // Frontend ports
-                HStack {
-                    Text("前端端口范围:")
-                        .frame(width: 140, alignment: .leading)
-
-                    Text("\(state.portPool.frontendRange.lower) - \(state.portPool.frontendRange.upper)")
-                        .font(.system(.body, design: .monospaced))
-                        .foregroundColor(.secondary)
+            VStack(alignment: .leading, spacing: 0) {
+                SectionView(title: "端口范围") {
+                    HStack {
+                        Text("API 端口范围:")
+                            .frame(width: 120, alignment: .leading)
+                        Text("\(state.portPool.apiRange.lower) - \(state.portPool.apiRange.upper)")
+                            .font(AppFont.monoData)
+                            .foregroundColor(.secondary)
+                    }
+                    HStack {
+                        Text("前端端口范围:")
+                            .frame(width: 120, alignment: .leading)
+                        Text("\(state.portPool.frontendRange.lower) - \(state.portPool.frontendRange.upper)")
+                            .font(AppFont.monoData)
+                            .foregroundColor(.secondary)
+                    }
                 }
                 
-                Divider()
-                
-                // Used ports
-                VStack(alignment: .leading, spacing: 10) {
-                    Text("已使用端口:")
-                        .font(.headline)
-                    
+                SectionView(title: "已使用端口") {
                     if state.portPool.usedPorts.isEmpty {
                         Text("无")
                             .foregroundColor(.secondary)
+                            .font(.caption)
                     } else {
                         ScrollView {
-                            VStack(alignment: .leading, spacing: 6) {
+                            LazyVStack(alignment: .leading, spacing: 4) {
                                 ForEach(state.portPool.usedPorts.sorted(), id: \.self) { port in
-                                    HStack {
+                                    HStack(spacing: 6) {
                                         Circle()
-                                            .fill(Color.blue)
-                                            .frame(width: 6, height: 6)
+                                            .fill(ElectricBlue.base)
+                                            .frame(width: 5, height: 5)
                                         Text(":\(port)")
-                                            .font(.system(.body, design: .monospaced))
+                                            .font(AppFont.monoData)
                                     }
                                 }
                             }
                         }
-                        .frame(maxHeight: 120)
+                        .frame(maxHeight: 100)
                     }
                 }
                 
                 Divider()
+                    .padding(.vertical, 8)
                 
-                // Scan port conflicts
                 Button("扫描端口冲突") {
                     // TODO: Implement port conflict scanning
                 }
                 .buttonStyle(.bordered)
+                .controlSize(.small)
                 
                 Spacer()
             }
-            .padding()
+            .padding(16)
         }
     }
     
@@ -230,76 +192,73 @@ struct SettingsView: View {
     @ViewBuilder
     private var aboutSettings: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 20) {
-                Text("关于")
-                    .font(.title2)
-                    .fontWeight(.bold)
-                
-                Divider()
-                
-                VStack(alignment: .leading, spacing: 12) {
-                    Text("Visual PM2 GUI")
-                        .font(.title)
-                        .fontWeight(.bold)
-                    
+            VStack(alignment: .leading, spacing: 0) {
+                SectionView(title: "Visual PM2 GUI") {
                     Text("版本 1.0.0")
-                        .font(.subheadline)
+                        .font(.caption)
                         .foregroundColor(.secondary)
-                    
                     Text("© 2026 豆爸")
                         .font(.caption)
                         .foregroundColor(.secondary)
                 }
                 
-                Divider()
-                
-                VStack(alignment: .leading, spacing: 12) {
-                    Text("功能特性")
-                        .font(.headline)
-                    
-                    VStack(alignment: .leading, spacing: 8) {
-                        FeatureRow(icon: "checkmark.circle", text: "实时查看 PM2 服务状态")
-                        FeatureRow(icon: "checkmark.circle", text: "快速启动/停止/重启服务")
-                        FeatureRow(icon: "checkmark.circle", text: "自动端口检测")
-                        FeatureRow(icon: "checkmark.circle", text: "日志快速查看")
-                        FeatureRow(icon: "checkmark.circle", text: "服务分类和搜索")
-                    }
-                    .font(.body)
+                SectionView(title: "功能特性") {
+                    FeatureRow(icon: "checkmark.circle", text: "实时查看 PM2 服务状态")
+                    FeatureRow(icon: "checkmark.circle", text: "快速启动/停止/重启服务")
+                    FeatureRow(icon: "checkmark.circle", text: "自动端口检测")
+                    FeatureRow(icon: "checkmark.circle", text: "日志快速查看")
+                    FeatureRow(icon: "checkmark.circle", text: "服务分类和搜索")
                 }
                 
-                Divider()
-                
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("技术栈")
-                        .font(.headline)
-                    
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("• SwiftUI - macOS 原生 UI")
-                        Text("• PM2 API - 进程管理")
-                        Text("• Node.js - 后端集成")
-                    }
-                    .font(.caption)
-                    .foregroundColor(.secondary)
+                SectionView(title: "技术栈") {
+                    Text("SwiftUI - macOS 原生 UI").font(.caption).foregroundColor(.secondary)
+                    Text("PM2 API - 进程管理").font(.caption).foregroundColor(.secondary)
+                    Text("Node.js - 后端集成").font(.caption).foregroundColor(.secondary)
                 }
                 
                 Spacer()
             }
-            .padding()
+            .padding(16)
         }
     }
 }
 
+// MARK: - Settings Section
+private struct SectionView<Content: View>: View {
+    let title: String
+    @ViewBuilder let content: Content
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(title)
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundColor(.secondary)
+                .textCase(.uppercase)
+            
+            VStack(alignment: .leading, spacing: 10) {
+                content
+            }
+            .padding(.leading, 2)
+        }
+        .padding(.vertical, 8)
+        
+        Divider()
+    }
+}
+
 // MARK: - Feature Row
-struct FeatureRow: View {
+private struct FeatureRow: View {
     let icon: String
     let text: String
     
     var body: some View {
-        HStack(spacing: 8) {
+        HStack(spacing: 6) {
             Image(systemName: icon)
-                .foregroundColor(.green)
+                .foregroundColor(ElectricBlue.base)
+                .font(.system(size: 12))
                 .frame(width: 16)
             Text(text)
+                .font(.system(size: 12))
         }
     }
 }

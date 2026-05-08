@@ -15,34 +15,41 @@ struct LogsView: View {
             HStack {
                 Text("日志 - \(project.name)")
                     .font(.headline)
+                    .lineLimit(1)
 
                 Spacer()
 
                 Button(action: copyLogs) {
                     HStack(spacing: 4) {
                         Image(systemName: "doc.on.doc")
+                            .font(.system(size: 11))
                         Text("复制")
+                            .font(.system(size: 11))
                     }
                 }
                 .disabled(logs.isEmpty || isLoading)
+                .controlSize(.small)
 
                 Button(action: loadLogs) {
                     HStack(spacing: 4) {
                         Image(systemName: "arrow.clockwise")
+                            .font(.system(size: 11))
                         Text("刷新")
+                            .font(.system(size: 11))
                     }
                 }
                 .disabled(isLoading)
+                .controlSize(.small)
 
-                Button(action: {
-                    dismiss()
-                }) {
+                Button(action: { dismiss() }) {
                     Image(systemName: "xmark.circle.fill")
-                        .font(.system(size: 20))
+                        .font(.system(size: 18))
+                        .foregroundColor(.secondary)
                 }
                 .buttonStyle(.plain)
             }
-            .padding()
+            .padding(.horizontal, 12)
+            .padding(.vertical, 8)
 
             Divider()
 
@@ -53,15 +60,16 @@ struct LogsView: View {
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                 }
             } else if let error = error {
-                VStack {
+                VStack(spacing: 8) {
                     Image(systemName: "exclamationmark.triangle")
-                        .font(.system(size: 40))
+                        .font(.system(size: 32))
                         .foregroundColor(.orange)
                     Text("加载失败")
                         .font(.headline)
                     Text(error.localizedDescription)
                         .font(.caption)
                         .foregroundColor(.secondary)
+                        .multilineTextAlignment(.center)
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
@@ -71,14 +79,17 @@ struct LogsView: View {
                         Text(logs.isEmpty ? "无日志内容" : logs)
                             .font(.system(.body, design: .monospaced))
                             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
-                            .padding()
+                            .padding(12)
                             .textSelection(.enabled)
                     }
 
-                    // Bottom toolbar with copy hint
-                    HStack {
-                        Text("💡 提示：可以选择文本后按 Cmd+C 复制")
-                            .font(.caption)
+                    // Bottom toolbar
+                    HStack(spacing: 6) {
+                        Image(systemName: "lightbulb")
+                            .font(.system(size: 10))
+                            .foregroundColor(.secondary)
+                        Text("提示：可以选择文本后按 Cmd+C 复制")
+                            .font(.system(size: 10))
                             .foregroundColor(.secondary)
 
                         Spacer()
@@ -90,9 +101,8 @@ struct LogsView: View {
                         .controlSize(.small)
                         .disabled(logs.isEmpty)
                     }
-                    .padding(.horizontal)
-                    .padding(.vertical, 8)
-                    .background(Color(nsColor: .controlBackgroundColor))
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 6)
                 }
             }
         }
@@ -124,7 +134,6 @@ struct LogsView: View {
     }
 
     private func copyLogs() {
-        // 复制选中的文本（如果有）或全部日志
         copyAllLogs()
     }
 
@@ -132,8 +141,6 @@ struct LogsView: View {
         let pasteboard = NSPasteboard.general
         pasteboard.clearContents()
         pasteboard.setString(logs, forType: .string)
-
-        // 显示提示
         showCopyAlert = true
     }
 }

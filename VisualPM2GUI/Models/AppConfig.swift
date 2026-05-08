@@ -8,9 +8,9 @@ struct TableColumnWidths: Codable {
     var actions: Double
 
     static let `default` = TableColumnWidths(
-        name: 260,
+        name: 220,
         port: 86,
-        status: 80,
+        status: 40,
         uptime: 120,
         actions: 132
     )
@@ -23,7 +23,6 @@ struct AppConfig: Codable {
     var showNotifications: Bool
     var compactMode: Bool
     var sortOrder: SortOrder
-    var showAdvancedInfo: Bool
     var portPool: PortPool
     var stoppedProjects: Set<String> // 用户手动停止的项目ID列表
     var tableColumns: TableColumnWidths
@@ -42,7 +41,6 @@ struct AppConfig: Codable {
         self.showNotifications = true
         self.compactMode = false
         self.sortOrder = .name
-        self.showAdvancedInfo = false
         self.portPool = PortPool()
         self.stoppedProjects = []
         self.tableColumns = .default
@@ -50,7 +48,7 @@ struct AppConfig: Codable {
 
     enum CodingKeys: String, CodingKey {
         case autoRefresh, refreshInterval, showNotifications, compactMode
-        case sortOrder, showAdvancedInfo, portPool, stoppedProjects, tableColumns
+        case sortOrder, portPool, stoppedProjects, tableColumns
     }
 
     init(from decoder: Decoder) throws {
@@ -60,7 +58,6 @@ struct AppConfig: Codable {
         showNotifications = try container.decodeIfPresent(Bool.self, forKey: .showNotifications) ?? true
         compactMode = try container.decodeIfPresent(Bool.self, forKey: .compactMode) ?? false
         sortOrder = try container.decodeIfPresent(SortOrder.self, forKey: .sortOrder) ?? .name
-        showAdvancedInfo = try container.decodeIfPresent(Bool.self, forKey: .showAdvancedInfo) ?? false
         portPool = (try? container.decode(PortPool.self, forKey: .portPool)) ?? PortPool()
         stoppedProjects = try container.decodeIfPresent(Set<String>.self, forKey: .stoppedProjects) ?? []
         tableColumns = try container.decodeIfPresent(TableColumnWidths.self, forKey: .tableColumns) ?? .default

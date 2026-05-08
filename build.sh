@@ -25,6 +25,7 @@ SWIFT_FILES=(
     "VisualPM2GUI/Models/PortPool.swift"
     "VisualPM2GUI/Models/AppConfig.swift"
     "VisualPM2GUI/Models/AppState.swift"
+    "VisualPM2GUI/Models/DesignSystem.swift"
     "VisualPM2GUI/Services/PM2Service.swift"
     "VisualPM2GUI/Views/StatusBarMenu.swift"
     "VisualPM2GUI/Views/ProjectMenuItem.swift"

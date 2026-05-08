@@ -13,11 +13,11 @@ final class MockPM2Service: PM2ServiceProtocol {
 
     func fetchProjects() async throws -> [PM2Project] { fetchResult }
     func startProject(_ id: String) async throws {
-        if shouldThrowOnStart { throw PM2ServiceError.invalidResponse("mock error") }
+        if shouldThrowOnStart { throw PM2ServiceError.commandFailed("mock error") }
         startedProjects.append(id)
     }
     func stopProject(_ id: String) async throws {
-        if shouldThrowOnStop { throw PM2ServiceError.invalidResponse("mock error") }
+        if shouldThrowOnStop { throw PM2ServiceError.commandFailed("mock error") }
         stoppedProjects.append(id)
     }
     func restartProject(_ id: String) async throws {}
