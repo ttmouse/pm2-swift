@@ -143,26 +143,22 @@ class AppState: ObservableObject {
             isLoading = false
         }
         isRefreshing = false
-        
-        // 确保用户手动停止的项目保持停止状态
-        await ensureUserIntent()
+        // 移除了 ensureUserIntent() 调用，避免干扰用户手动操作
     }
     
     // MARK: - User Intent Persistence
-    private func ensureUserIntent() async {
+    // 仅在应用启动时调用一次，不在每次 refresh 时调用
+    func applyUserIntentOnce() async {
         let stoppedProjectIds = ConfigManager.shared.getConfig().stoppedProjects
         
         guard !stoppedProjectIds.isEmpty else { return }
         
-        // 检查每个应该保持停止的项目
         for projectId in stoppedProjectIds {
             if let project = projects.first(where: { $0.id == projectId }), project.isOnline {
-                // 项目正在运行但用户意图是停止的，停止它
                 try? await pm2Service.stopProject(projectId)
             }
         }
         
-        // 刷新状态
         do {
             projects = try await pm2Service.fetchProjects()
             sortProjects()
@@ -266,14 +262,12 @@ class AppState: ObservableObject {
     }
 
     // MARK: - Helper: 乐观UI更新
+    // Note: PM2Project is a struct with let properties, so true optimistic UI
+    // requires architectural changes. Currently relies on refresh after operations.
+    // The pendingStarts/pendingStops sets are used for count calculations.
     private func updateProjectStatus(_ id: String, to status: ProcessStatus) {
-        if let index = projects.firstIndex(where: { $0.id == id }) {
-            var updatedProject = projects[index]
-            // 创建具有新状态的项目（通过mirror或直接修改）
-            // 由于PM2Project是struct，我们需要创建新的实例
-            // 这里简化处理，直接刷新会更准确
-            // 但为了乐观UI，我们可以临时修改显示
-        }
+        // Stub: actual status comes from PM2 after refresh()
+        // Optimistic UI is handled via pendingStarts/pendingStops sets
     }
 
     func openProjectURL(_ project: PM2Project) async {

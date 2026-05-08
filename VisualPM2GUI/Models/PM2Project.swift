@@ -123,14 +123,6 @@ enum Priority: String, Codable, CaseIterable {
     }
 }
 
-// MARK: - Project Metadata
-struct ProjectMetadata: Codable {
-    var tags: [String] = []
-    var notes: String = ""
-    var autoStart: Bool = false
-    var priority: Priority = .medium
-}
-
 // MARK: - PM2 Project Model
 struct PM2Project: Identifiable, Codable, Equatable {
     // Core identifiers
@@ -176,6 +168,14 @@ struct PM2Project: Identifiable, Codable, Equatable {
     var fullURL: String? {
         guard let host = host, let port = port else { return nil }
         return "http://\(host):\(port)"
+    }
+    
+    // 优先使用已知端口，fallback 到 localhost
+    var resolvedURL: String? {
+        if let port = port {
+            return "http://localhost:\(port)"
+        }
+        return nil
     }
     
     var memoryFormatted: String {

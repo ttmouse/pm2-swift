@@ -101,59 +101,54 @@ struct ProjectMenuItem: View {
 
     private var actionButtons: some View {
         HStack(spacing: 6) {
-            Group {
-                // 启动/停止 合并为一个互斥按钮
-                Button(action: {
-                    Task {
-                        if project.isOnline {
-                            await state.stopProject(project.id)
-                        } else {
-                            await state.startProject(project.id)
-                        }
-                    }
-                }) {
-                    Image(systemName: project.isOnline ? "stop.fill" : "play.fill")
-                        .font(.system(size: 10))
-                }
-
-                Button(action: {
-                    Task { await state.restartProject(project.id) }
-                }) {
-                    Image(systemName: "arrow.clockwise")
-                        .font(.system(size: 10))
-                }
-                .disabled(project.isStopped)
-
-                Button(action: { showingLogs = true }) {
-                    Image(systemName: "doc.text")
-                        .font(.system(size: 10))
-                }
-
-                Button(action: {
-                    print("[DEBUG] Safari button clicked for: \(project.name)")
-                    print("[DEBUG] host: \(project.host ?? "nil")")
-                    print("[DEBUG] port: \(project.port ?? -1)")
-                    print("[DEBUG] fullURL: \(project.fullURL ?? "nil")")
-                    
-                    if let url = project.fullURL, let nsUrl = URL(string: url) {
-                        print("[DEBUG] Opening URL: \(nsUrl.absoluteString)")
-                        NSWorkspace.shared.open(nsUrl)
+            // 启动/停止 合并为一个互斥按钮
+            Button(action: {
+                Task {
+                    if project.isOnline {
+                        await state.stopProject(project.id)
                     } else {
-                        print("[DEBUG] fullURL is nil, calling openProjectURL")
-                        Task { await state.openProjectURL(project) }
+                        await state.startProject(project.id)
                     }
-                }) {
-                    Image(systemName: "safari")
-                        .font(.system(size: 10))
                 }
+            }) {
+                Image(systemName: project.isOnline ? "stop.fill" : "play.fill")
+                    .font(.system(size: 10))
             }
-            .buttonStyle(.plain)
-            .frame(width: 22, height: 22)
-            .contentShape(Rectangle())
-            .onHover { isHovering in
-                if isHovering { NSCursor.pointingHand.push() }
-                else { NSCursor.pop() }
+            .disabled(state.pendingStarts.contains(project.id) || state.pendingStops.contains(project.id))
+
+            Button(action: {
+                Task { await state.restartProject(project.id) }
+            }) {
+                Image(systemName: "arrow.clockwise")
+                    .font(.system(size: 10))
             }
+            .disabled(project.isStopped || state.pendingStarts.contains(project.id) || state.pendingStops.contains(project.id))
+
+            Button(action: { showingLogs = true }) {
+                Image(systemName: "doc.text")
+                    .font(.system(size: 10))
+            }
+
+            Button(action: {
+                // 优先使用 resolvedURL（已知端口），其次 fullURL，最后猜测
+                if let urlString = project.resolvedURL ?? project.fullURL,
+                   let url = URL(string: urlString) {
+                    NSWorkspace.shared.open(url)
+                } else {
+                    // 没有已知端口，使用 guessPortForProject
+                    Task { await state.openProjectURL(project) }
+                }
+            }) {
+                Image(systemName: "safari")
+                    .font(.system(size: 10))
+            }
+        }
+        .buttonStyle(.plain)
+        .frame(width: 22, height: 22)
+        .contentShape(Rectangle())
+        .onHover { isHovering in
+            if isHovering { NSCursor.pointingHand.push() }
+            else { NSCursor.pop() }
         }
     }
 

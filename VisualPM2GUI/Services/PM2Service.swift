@@ -7,6 +7,7 @@ enum PM2ServiceError: Error, LocalizedError {
     case commandFailed(String)
     case invalidResponse
     case portDetectionFailed
+    case maxRetriesExceeded(String)
 
     var errorDescription: String? {
         switch self {
@@ -15,6 +16,7 @@ enum PM2ServiceError: Error, LocalizedError {
         case .commandFailed(let cmd): return "Command '\(cmd)' failed."
         case .invalidResponse: return "Invalid response from PM2."
         case .portDetectionFailed: return "Failed to detect port."
+        case .maxRetriesExceeded(let msg): return "Max retries exceeded: \(msg)"
         }
     }
 }
@@ -166,17 +168,33 @@ class PM2Service: PM2ServiceProtocol {
         _ = try await executePM2Command("start-app", configPath, appName)
     }
 
-    private func executePM2Command(_ arguments: String...) async throws -> String {
-        try await withCheckedThrowingContinuation { continuation in
-            queue.async {
-                do {
-                    let result = try self.executePM2CommandSync(arguments: arguments)
-                    continuation.resume(returning: result)
-                } catch {
-                    continuation.resume(throwing: error)
+    // 带重试机制的 PM2 命令执行
+    private func executePM2Command(_ arguments: String..., maxRetries: Int = 3) async throws -> String {
+        var lastError: Error?
+        
+        for attempt in 1...maxRetries {
+            do {
+                return try await withCheckedThrowingContinuation { continuation in
+                    queue.async {
+                        do {
+                            let result = try self.executePM2CommandSync(arguments: arguments)
+                            continuation.resume(returning: result)
+                        } catch {
+                            continuation.resume(throwing: error)
+                        }
+                    }
+                }
+            } catch {
+                lastError = error
+                if attempt < maxRetries {
+                    // 指数退避: 0.3s, 0.6s, 1.2s...
+                    let delay = UInt64(pow(2.0, Double(attempt - 1)) * 300_000_000)
+                    try? await Task.sleep(nanoseconds: delay)
                 }
             }
         }
+        
+        throw lastError ?? PM2ServiceError.maxRetriesExceeded(arguments.joined(separator: " "))
     }
 
     private func executePM2CommandSync(arguments: [String]) throws -> String {
