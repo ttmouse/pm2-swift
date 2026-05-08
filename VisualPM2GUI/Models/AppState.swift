@@ -24,18 +24,6 @@ class AppState: ObservableObject {
     @Published var pendingStarts: Set<String> = []
     @Published var pendingStops: Set<String> = []
     @Published var pendingGroupToggles: Set<String> = []
-    
-    func isGroupPending(_ groupKey: String) -> Bool {
-        pendingGroupToggles.contains(groupKey)
-    }
-    
-    func setGroupPending(_ groupKey: String, _ isPending: Bool) {
-        if isPending {
-            pendingGroupToggles.insert(groupKey)
-        } else {
-            pendingGroupToggles.remove(groupKey)
-        }
-    }
 
     // MARK: - Refresh Settings
     @Published var autoRefresh: Bool = true {
