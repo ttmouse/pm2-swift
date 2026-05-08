@@ -407,9 +407,9 @@ struct StatusBarMenu: View {
                                                 portColumnWidth: portColumnWidth,
                                                 statusColumnWidth: statusColumnWidth,
                                                 uptimeColumnWidth: uptimeColumnWidth,
-                                                actionsColumnWidth: actionsColumnWidth
+                                                actionsColumnWidth: actionsColumnWidth,
+                                                isGrouped: true
                                             )
-                                                .padding(.leading, 14)
                                                 .id("group-project-row-\(item.project.id)")
                                             if item.project.id != groupProjects.last?.id {
                                                 Divider().padding(.leading, 74)

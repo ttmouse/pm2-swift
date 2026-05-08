@@ -12,12 +12,14 @@ struct ProjectMenuItem: View {
     var statusColumnWidth: CGFloat = 80
     var uptimeColumnWidth: CGFloat = 120
     var actionsColumnWidth: CGFloat = 132
+    var isGrouped: Bool = false
     @State private var showingLogs = false
     @State private var hovering = false
     
     var body: some View {
         rowContent
         .padding(.vertical, 6)
+        .padding(.leading, isGrouped ? 14 : 0)
         .background(
             RoundedRectangle(cornerRadius: 8, style: .continuous)
                 .fill(hovering ? Color.secondary.opacity(0.1) : Color.clear)
