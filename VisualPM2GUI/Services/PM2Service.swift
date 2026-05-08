@@ -95,19 +95,13 @@ class PM2Service: PM2ServiceProtocol {
 
     func fetchProjects() async throws -> [PM2Project] {
         let jsonString = try await executePM2Command("list")
-        let errMsg = "fetchProjects: jsonString length=\(jsonString.count) first100=\(String(jsonString.prefix(100)))\n"
-        FileHandle.standardError.write(errMsg.data(using: .utf8)!)
         guard let data = jsonString.data(using: .utf8) else {
-            FileHandle.standardError.write("fetchProjects: failed to convert to data\n".data(using: .utf8)!)
             throw PM2ServiceError.invalidResponse
         }
         do {
             let result = try JSONDecoder().decode([PM2Project].self, from: data)
-            FileHandle.standardError.write("fetchProjects: decoded \(result.count) projects\n".data(using: .utf8)!)
             return result
         } catch {
-            let errDetail = "fetchProjects: JSON decode error: \(error)\n"
-            FileHandle.standardError.write(errDetail.data(using: .utf8)!)
             throw PM2ServiceError.invalidResponse
         }
     }

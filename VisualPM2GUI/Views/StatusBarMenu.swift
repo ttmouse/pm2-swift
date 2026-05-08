@@ -67,12 +67,54 @@ struct StatusBarMenu: View {
         end tell
         """
 
-        if let scriptObject = NSAppleScript(source: script) {
+        executeAppleScript(script, name: "Ghostty") { error in
+            if let error = error {
+                // Fallback: try to open Terminal instead
+                self.openInTerminal(path: targetDirectory)
+            }
+        }
+    }
+    
+    private func openInTerminal(path: String) {
+        let escapedPath = path.replacingOccurrences(of: "\"", with: "\\\"")
+        let script = """
+        tell application "Terminal"
+            activate
+            do script "cd \"\(escapedPath)\" && clear"
+        end tell
+        """
+        executeAppleScript(script, name: "Terminal", completion: nil)
+    }
+    
+    private func openInFinder(path: String) {
+        let targetDirectory = resolveGhosttyDirectory(from: path)
+        let url = URL(fileURLWithPath: targetDirectory)
+        NSWorkspace.shared.open(url)
+    }
+    
+    private func executeAppleScript(_ source: String, name: String, completion: ((Error?) -> Void)?) {
+        if let scriptObject = NSAppleScript(source: source) {
             var error: NSDictionary?
             scriptObject.executeAndReturnError(&error)
-            if let error {
-                NSLog("Failed to open Ghostty tab: \(error)")
+            if let error = error {
+                let errorMessage = error[NSAppleScript.errorMessage] as? String ?? "Unknown error"
+                NSLog("AppleScript (\(name)) failed: \(errorMessage)")
+                
+                // Notify user about the failure
+                DispatchQueue.main.async {
+                    let notification = NSUserNotification()
+                    notification.title = "\(name) 操作失败"
+                    notification.informativeText = errorMessage
+                    notification.soundName = NSUserNotificationDefaultSoundName
+                    NSUserNotificationCenter.default.deliver(notification)
+                }
+                
+                completion?(NSError(domain: "AppleScript", code: -1, userInfo: [NSLocalizedDescriptionKey: errorMessage]))
+            } else {
+                completion?(nil)
             }
+        } else {
+            completion?(NSError(domain: "AppleScript", code: -1, userInfo: [NSLocalizedDescriptionKey: "Failed to create AppleScript"]))
         }
     }
 
@@ -303,6 +345,18 @@ struct StatusBarMenu: View {
                                     }
                                     .buttonStyle(.plain)
                                     .help("在 Ghostty 中打开")
+
+                                    Button(action: {
+                                        if let firstProject = groupProjects.first {
+                                            openInFinder(path: firstProject.projectPath)
+                                        }
+                                    }) {
+                                        Image(systemName: "folder")
+                                            .font(.system(size: 12))
+                                            .foregroundColor(.secondary)
+                                    }
+                                    .buttonStyle(.plain)
+                                    .help("在 Finder 中打开")
 
                                     Toggle("", isOn: Binding(
                                         get: { isGroupActive },

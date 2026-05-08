@@ -7,7 +7,7 @@
     <key>CFBundleExecutable</key>
     <string>VisualPM2GUI</string>
     <key>CFBundleIdentifier</key>
-    <string>com.douba.visual-pm2-gui</string>
+    <string>com.douba.pm2-swift</string>
     <key>CFBundleInfoDictionaryVersion</key>
     <string>6.0</string>
     <key>CFBundleName</key>

@@ -75,7 +75,8 @@ function categorizeApp(name) {
 function buildEcosystemPortMap() {
   try {
     const resolvedPath = path.resolve(ECOSYSTEM_CONFIG_PATH);
-    delete require.cache[resolvedPath];
+    // Use require.resolve to get the correct cache key
+    delete require.cache[require.resolve(resolvedPath)];
     const ecosystemConfig = require(resolvedPath);
     const apps = Array.isArray(ecosystemConfig?.apps) ? ecosystemConfig.apps : [];
     const result = new Map();
@@ -265,9 +266,8 @@ pm2.connect((err) => {
               }
               
               try {
-                await new Promise((resolve, reject) => {
-                  pm2.start(app, (err) => err ? reject(err) : resolve());
-                });
+                // PM2 start returns a Promise, use it directly
+                await pm2.start(app);
                 results.push({ name: app.name, started: true });
               } catch (e) {
                 results.push({ name: app.name, error: e.message });
@@ -299,9 +299,8 @@ pm2.connect((err) => {
             }
             
             // 直接启动，不需要检查已存在（PM2 start 会自动处理）
-            await new Promise((resolve, reject) => {
-              pm2.start(app, (err) => err ? reject(err) : resolve());
-            });
+            // PM2 start returns a Promise, use it directly
+            await pm2.start(app);
             
             console.log(JSON.stringify({ success: true, name: projectName, started: true }));
           }

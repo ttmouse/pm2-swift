@@ -365,7 +365,7 @@ cat > "${PROJECT_NAME}.xcodeproj/project.pbxproj" << 'EOF'
 				);
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.douba.visual-pm2-gui;
+				PRODUCT_BUNDLE_IDENTIFIER = com.douba.pm2-swift;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = macosx;
 				SWIFT_EMIT_LOC_STRINGS = YES;
@@ -397,7 +397,7 @@ cat > "${PROJECT_NAME}.xcodeproj/project.pbxproj" << 'EOF'
 				);
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.douba.visual-pm2-gui;
+				PRODUCT_BUNDLE_IDENTIFIER = com.douba.pm2-swift;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = macosx;
 				SWIFT_EMIT_LOC_STRINGS = YES;

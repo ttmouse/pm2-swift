@@ -169,7 +169,7 @@ struct SettingsView: View {
                     Text("API 端口范围:")
                         .frame(width: 140, alignment: .leading)
 
-                    Text("\(state.portPool.apiRange.lowerBound) - \(state.portPool.apiRange.upperBound)")
+                    Text("\(state.portPool.apiRange.lower) - \(state.portPool.apiRange.upper)")
                         .font(.system(.body, design: .monospaced))
                         .foregroundColor(.secondary)
                 }
@@ -179,7 +179,7 @@ struct SettingsView: View {
                     Text("前端端口范围:")
                         .frame(width: 140, alignment: .leading)
 
-                    Text("\(state.portPool.frontendRange.lowerBound) - \(state.portPool.frontendRange.upperBound)")
+                    Text("\(state.portPool.frontendRange.lower) - \(state.portPool.frontendRange.upper)")
                         .font(.system(.body, design: .monospaced))
                         .foregroundColor(.secondary)
                 }

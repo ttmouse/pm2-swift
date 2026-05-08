@@ -93,7 +93,7 @@ scripts/
 
 ## Configuration
 
-- **Bundle ID**: `com.douba.visual-pm2-gui`
+- **Bundle ID**: `com.douba.pm2-swift`
 - **Target**: macOS 14.0+ (arm64/x86_64)
 - **PM2 ecosystem config**: `/Users/douba/.pm2/ecosystem.config.js`
 - **Project directories scanned**: See `PROJECT_DIRS` in `pm2_wrapper.js`
@@ -104,5 +104,5 @@ scripts/
 <type>(<scope>): <description>
 
 Types: fix, feat, docs, chore, refactor
-Scopes: visual-pm2-gui, pm2, configs
+Scopes: pm2-swift, pm2, configs
 ```

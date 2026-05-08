@@ -61,7 +61,7 @@ cd /Users/douba/Projects/XM/project/pm2-swift
 4. **配置项目**
    - 点击项目名称 → 选择 **VisualPM2GUI** target
    - **General** 标签：
-     - Bundle Identifier: `com.douba.visual-pm2-gui`
+     - Bundle Identifier: `com.douba.pm2-swift`
      - Version: `1.0`
    - **Signing & Capabilities** 标签：
      - 选择 **Automatically manage signing**

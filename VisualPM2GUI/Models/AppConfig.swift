@@ -61,7 +61,7 @@ struct AppConfig: Codable {
         compactMode = try container.decodeIfPresent(Bool.self, forKey: .compactMode) ?? false
         sortOrder = try container.decodeIfPresent(SortOrder.self, forKey: .sortOrder) ?? .name
         showAdvancedInfo = try container.decodeIfPresent(Bool.self, forKey: .showAdvancedInfo) ?? false
-        portPool = try container.decodeIfPresent(PortPool.self, forKey: .portPool) ?? PortPool()
+        portPool = (try? container.decode(PortPool.self, forKey: .portPool)) ?? PortPool()
         stoppedProjects = try container.decodeIfPresent(Set<String>.self, forKey: .stoppedProjects) ?? []
         tableColumns = try container.decodeIfPresent(TableColumnWidths.self, forKey: .tableColumns) ?? .default
     }

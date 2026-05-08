@@ -76,6 +76,7 @@ class AppState: ObservableObject {
     private var refreshTimer: Timer?
     private var isRefreshing = false
     private var isApplyingPreferences = false
+    private var saveDebounceTask: Task<Void, Never>?
     
     // MARK: - Sort Order
     enum SortOrder: String, CaseIterable {
@@ -98,11 +99,6 @@ class AppState: ObservableObject {
 
         Task {
             await refresh(showLoading: true)
-            // DEBUG: 记录加载结果
-            let logMessage = "AppState init: loaded \(projects.count) projects, filtered: \(filteredProjects.count)\n"
-            if let data = logMessage.data(using: .utf8) {
-                try? data.write(to: URL(fileURLWithPath: "/tmp/visual-pm2-app.log"))
-            }
         }
     }
 
@@ -112,8 +108,6 @@ class AppState: ObservableObject {
 
     // MARK: - Actions
     func refresh(showLoading: Bool = false) async {
-        let startMsg = "refresh START showLoading=\(showLoading) isRefreshing=\(isRefreshing)\n"
-        FileHandle.standardError.write(startMsg.data(using: .utf8)!)
         guard !isRefreshing else {
             return
         }
@@ -126,14 +120,9 @@ class AppState: ObservableObject {
         do {
             let fetched = try await pm2Service.fetchProjects()
             projects = fetched
-            let logMsg = "refresh: fetched \(projects.count) projects\n"
-            try logMsg.write(toFile: "/tmp/visual-pm2-app.log", atomically: true, encoding: .utf8)
-            FileHandle.standardError.write(logMsg.data(using: .utf8)!)
             sortProjects()
         } catch {
             self.error = error
-            let logMsg = "refresh error: \(error)\n"
-            FileHandle.standardError.write(logMsg.data(using: .utf8)!)
             if showNotifications {
                 sendNotification(title: "刷新失败", message: error.localizedDescription)
             }
@@ -143,7 +132,6 @@ class AppState: ObservableObject {
             isLoading = false
         }
         isRefreshing = false
-        // 移除了 ensureUserIntent() 调用，避免干扰用户手动操作
     }
     
     // MARK: - User Intent Persistence
@@ -510,12 +498,42 @@ class AppState: ObservableObject {
     }
     
     func savePreferences() {
+        // Debounce save operations to prevent excessive disk writes
+        saveDebounceTask?.cancel()
+        saveDebounceTask = Task { @MainActor in
+            // Wait 500ms before saving (debounce)
+            try? await Task.sleep(nanoseconds: 500_000_000)
+            guard !Task.isCancelled else { return }
+            
+            var config = ConfigManager.shared.getConfig()
+            config.autoRefresh = autoRefresh
+            config.refreshInterval = refreshInterval
+            config.showNotifications = showNotifications
+            config.compactMode = compactMode
+            // Map app state sort order to config sort order
+            switch sortOrder {
+            case .name: config.sortOrder = .name
+            case .status: config.sortOrder = .status
+            case .cpu: config.sortOrder = .cpu
+            case .memory: config.sortOrder = .memory
+            case .uptime: config.sortOrder = .uptime
+            }
+            config.showAdvancedInfo = showAdvancedInfo
+            config.portPool = portPool
+            config.tableColumns = tableColumns
+            
+            ConfigManager.shared.updateConfig(config)
+        }
+    }
+    
+    // Immediate save without debounce (for critical operations)
+    func savePreferencesImmediately() {
+        saveDebounceTask?.cancel()
         var config = ConfigManager.shared.getConfig()
         config.autoRefresh = autoRefresh
         config.refreshInterval = refreshInterval
         config.showNotifications = showNotifications
         config.compactMode = compactMode
-        // Map app state sort order to config sort order
         switch sortOrder {
         case .name: config.sortOrder = .name
         case .status: config.sortOrder = .status

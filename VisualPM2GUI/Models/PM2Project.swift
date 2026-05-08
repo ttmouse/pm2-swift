@@ -195,11 +195,20 @@ struct PM2Project: Identifiable, Codable, Equatable {
 
     var projectGroupKey: String {
         let parts = id.split(separator: "-")
-        // 增加更健壮的逻辑：如果没有横杠，或者分组名不合理，强制统一归类
+        // 取前两段作为组名，适配 {project-name}-{role} 模式
+        // 例如：XM-bazi-backend → XM-bazi, xm-console-api → xm-console
         if parts.count >= 2 {
             return "\(parts[0])-\(parts[1])"
         }
-        return "未分组" // 统一归类，避免直接展示 id 导致的 UI 碎裂
+        if let first = parts.first, !first.isEmpty {
+            return String(first)
+        }
+        // 如果没有横杠但有下划线，使用下划线分割
+        let underscoreParts = id.split(separator: "_")
+        if let first = underscoreParts.first, !first.isEmpty {
+            return String(first)
+        }
+        return "未分组"
     }
     
     // Coding keys for custom decoding
