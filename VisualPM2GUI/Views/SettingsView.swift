@@ -100,7 +100,7 @@ struct SettingsView: View {
                         Text("排序方式")
                             .frame(width: 100, alignment: .leading)
                         Picker("排序方式", selection: $state.sortOrder) {
-                            ForEach(AppState.SortOrder.allCases, id: \.self) { order in
+                            ForEach(SortOrder.allCases, id: \.self) { order in
                                 Text(order.rawValue).tag(order)
                             }
                         }

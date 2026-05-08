@@ -15,7 +15,6 @@ struct StatusBarMenu: View {
     @ObservedObject var state: AppState
     @State private var showingSettings = false
     @State private var collapsedGroups: Set<String> = []
-    @State private var pendingGroupToggles: Set<String> = []
     @State private var hasInitializedCollapsedGroups = false
     @State private var panelHeight: CGFloat = 400
     @State private var showGroupedView: Bool = true
@@ -367,23 +366,23 @@ struct StatusBarMenu: View {
                                         .help("在 Finder 中打开")
 
                                         Toggle("", isOn: Binding(
-                                            get: { isGroupActive || pendingGroupToggles.contains(projectGroup) },
+                                            get: { isGroupActive || state.pendingGroupToggles.contains(projectGroup) },
                                             set: { isOn in
-                                                pendingGroupToggles.insert(projectGroup)
+                                                state.pendingGroupToggles.insert(projectGroup)
                                                 Task {
                                                     if isOn {
                                                         await state.startProjectsInGroup(projectGroup)
                                                     } else {
                                                         await state.stopProjectsInGroup(projectGroup)
                                                     }
-                                                    pendingGroupToggles.remove(projectGroup)
+                                                    state.pendingGroupToggles.remove(projectGroup)
                                                 }
                                             }
                                         ))
                                         .toggleStyle(.switch)
                                         .scaleEffect(0.7)
                                         .frame(width: 36)
-                                        .disabled(pendingGroupToggles.contains(projectGroup))
+                                        .disabled(state.pendingGroupToggles.contains(projectGroup))
                                     }
                                     .padding(.horizontal, 10)
                                     .padding(.vertical, 8)

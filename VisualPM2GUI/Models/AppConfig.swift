@@ -16,6 +16,15 @@ struct TableColumnWidths: Codable {
     )
 }
 
+// MARK: - Sort Order
+enum SortOrder: String, Codable, CaseIterable {
+    case name = "名称"
+    case status = "状态"
+    case cpu = "CPU"
+    case memory = "内存"
+    case uptime = "运行时长"
+}
+
 // MARK: - App Configuration
 struct AppConfig: Codable {
     var autoRefresh: Bool
@@ -26,14 +35,6 @@ struct AppConfig: Codable {
     var portPool: PortPool
     var stoppedProjects: Set<String> // 用户手动停止的项目ID列表
     var tableColumns: TableColumnWidths
-    
-    enum SortOrder: String, Codable, CaseIterable {
-        case name = "名称"
-        case status = "状态"
-        case cpu = "CPU"
-        case memory = "内存"
-        case uptime = "运行时长"
-    }
     
     init() {
         self.autoRefresh = true
@@ -68,8 +69,17 @@ struct AppConfig: Codable {
     }
 }
 
+// MARK: - Config Persistence Protocol
+protocol ConfigPersistence: AnyObject {
+    func getConfig() -> AppConfig
+    func updateConfig(_ config: AppConfig)
+    func markProjectStopped(_ projectId: String)
+    func markProjectStarted(_ projectId: String)
+    func shouldProjectStayStopped(_ projectId: String) -> Bool
+}
+
 // MARK: - Config Manager
-class ConfigManager {
+class ConfigManager: ConfigPersistence {
     static let shared = ConfigManager()
     
     private let configURL: URL

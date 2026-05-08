@@ -19,61 +19,7 @@ struct PortRange: Codable, Equatable {
     }
 }
 
-// MARK: - Thread-safe Port Pool Manager
-actor PortPoolManager {
-    private var usedPorts: Set<Int> = []
-    private let apiRange: ClosedRange<Int>
-    private let frontendRange: ClosedRange<Int>
-    
-    init(apiRange: ClosedRange<Int> = 18920...18999,
-         frontendRange: ClosedRange<Int> = 15920...15999) {
-        self.apiRange = apiRange
-        self.frontendRange = frontendRange
-    }
-    
-    func allocatePort(category: ServiceCategory) -> Int? {
-        let range = category == .api || category == .database ? apiRange : frontendRange
-        for port in range {
-            if !usedPorts.contains(port) && !isPortInUse(port) {
-                usedPorts.insert(port)
-                return port
-            }
-        }
-        return nil
-    }
-    
-    func releasePort(_ port: Int) {
-        usedPorts.remove(port)
-    }
-    
-    func markPortUsed(_ port: Int) {
-        usedPorts.insert(port)
-    }
-    
-    func getUsedPorts() -> Set<Int> {
-        return usedPorts
-    }
-    
-    func reset() {
-        usedPorts.removeAll()
-    }
-    
-    nonisolated private func isPortInUse(_ port: Int) -> Bool {
-        let task = Process()
-        task.launchPath = "/usr/sbin/lsof"
-        task.arguments = ["-nP", "-iTCP:\(port)", "-sTCP:LISTEN", "-t"]
-        
-        let pipe = Pipe()
-        task.standardOutput = pipe
-        task.standardError = pipe
-        task.launch()
-        task.waitUntilExit()
-        
-        return task.terminationStatus == 0
-    }
-}
-
-// MARK: - Port Pool (Codable struct for persistence)
+// MARK: - Port Range
 struct PortPool: Codable {
     var apiRange: PortRange
     var frontendRange: PortRange

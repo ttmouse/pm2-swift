@@ -23,6 +23,19 @@ class AppState: ObservableObject {
     // MARK: - 乐观UI更新：临时状态
     @Published var pendingStarts: Set<String> = []
     @Published var pendingStops: Set<String> = []
+    @Published var pendingGroupToggles: Set<String> = []
+    
+    func isGroupPending(_ groupKey: String) -> Bool {
+        pendingGroupToggles.contains(groupKey)
+    }
+    
+    func setGroupPending(_ groupKey: String, _ isPending: Bool) {
+        if isPending {
+            pendingGroupToggles.insert(groupKey)
+        } else {
+            pendingGroupToggles.remove(groupKey)
+        }
+    }
 
     // MARK: - Refresh Settings
     @Published var autoRefresh: Bool = true {
@@ -58,13 +71,21 @@ class AppState: ObservableObject {
     @Published var tableColumns: TableColumnWidths = .default
     
     // MARK: - User Intent Persistence (用户意图持久化)
-    private var configManager = ConfigManager.shared
-
+    private let configPersistence: ConfigPersistence
+    
     // MARK: - Tabs
     enum TabType: String, CaseIterable {
         case all = "全部"
         case active = "激活的"
         case inactive = "未激活的"
+        
+        var filterType: ProjectFilterType {
+            switch self {
+            case .all: return .all
+            case .active: return .active
+            case .inactive: return .inactive
+            }
+        }
     }
     @Published var selectedTab: TabType = .all {
         didSet { updateFilteredProjects() }
@@ -77,17 +98,9 @@ class AppState: ObservableObject {
     private var isApplyingPreferences = false
     private var saveDebounceTask: Task<Void, Never>?
     
-    // MARK: - Sort Order
-    enum SortOrder: String, CaseIterable {
-        case name = "名称"
-        case status = "状态"
-        case cpu = "CPU"
-        case memory = "内存"
-        case uptime = "运行时长"
-    }
-    
-    init(pm2Service: PM2ServiceProtocol = PM2Service()) {
+    init(pm2Service: PM2ServiceProtocol = PM2Service(), configPersistence: ConfigPersistence = ConfigManager.shared) {
         self.pm2Service = pm2Service
+        self.configPersistence = configPersistence
         isApplyingPreferences = true
         loadPreferences()
         isApplyingPreferences = false
@@ -136,7 +149,7 @@ class AppState: ObservableObject {
     // MARK: - User Intent Persistence
     // 仅在应用启动时调用一次，不在每次 refresh 时调用
     func applyUserIntentOnce() async {
-        let stoppedProjectIds = ConfigManager.shared.getConfig().stoppedProjects
+        let stoppedProjectIds = configPersistence.getConfig().stoppedProjects
         
         guard !stoppedProjectIds.isEmpty else { return }
         
@@ -223,7 +236,7 @@ class AppState: ObservableObject {
             try await pm2Service.startProject(id)
             try await Task.sleep(nanoseconds: 300_000_000) // 0.3s 等待 PM2 稳定
             pendingStarts.remove(id)
-            ConfigManager.shared.markProjectStarted(id)
+            configPersistence.markProjectStarted(id)
             return nil
         } catch {
             pendingStarts.remove(id)
@@ -239,7 +252,7 @@ class AppState: ObservableObject {
             try await pm2Service.stopProject(id)
             try await Task.sleep(nanoseconds: 200_000_000) // 0.2s 等待 PM2 稳定
             pendingStops.remove(id)
-            ConfigManager.shared.markProjectStopped(id)
+            configPersistence.markProjectStopped(id)
             return nil
         } catch {
             pendingStops.remove(id)
@@ -395,11 +408,11 @@ class AppState: ObservableObject {
         }
 
         // 持久化组停止意图（_executeStopProject 已标记单个项目，此处补充整体同步）
-        var config = ConfigManager.shared.getConfig()
+        var config = configPersistence.getConfig()
         for project in groupProjects {
             config.stoppedProjects.insert(project.id)
         }
-        ConfigManager.shared.updateConfig(config)
+        configPersistence.updateConfig(config)
 
         // 一次刷新、一次保存
         await refresh()
@@ -439,59 +452,15 @@ class AppState: ObservableObject {
     }
     
     var sortedGroupedProjects: [(groupName: String, projects: [PM2Project])] {
-        let grouped = Dictionary(grouping: filteredProjects) { $0.projectGroupKey }
-        
-        return grouped.map { ($0.key, $0.value) }.sorted { a, b in
-            let aActive = a.projects.contains { $0.isOnline }
-            let bActive = b.projects.contains { $0.isOnline }
-            
-            if aActive != bActive {
-                return aActive
-            }
-            return a.groupName < b.groupName
-        }
+        groupProjects(filteredProjects)
     }
     
     private func updateFilteredProjects() {
-        var result = projects
-
-        if let category = selectedCategory {
-            result = result.filter { $0.category == category }
-        }
-
-        switch selectedTab {
-        case .all:
-            break
-        case .active:
-            result = result.filter { $0.isOnline }
-        case .inactive:
-            result = result.filter { !$0.isOnline }
-        }
-
-        if !filterText.isEmpty {
-            result = result.filter { project in
-                project.name.localizedCaseInsensitiveContains(filterText) ||
-                project.id.localizedCaseInsensitiveContains(filterText) ||
-                (project.tags?.contains { $0.localizedCaseInsensitiveContains(filterText) } ?? false)
-            }
-        }
-
-        filteredProjects = result
+        filteredProjects = filterProjects(projects, category: selectedCategory, filterType: selectedTab.filterType, text: filterText)
     }
 
     private func sortProjects() {
-        switch sortOrder {
-        case .name:
-            projects.sort { $0.name < $1.name }
-        case .status:
-            projects.sort { $0.status.rawValue < $1.status.rawValue }
-        case .cpu:
-            projects.sort { $0.cpu > $1.cpu }
-        case .memory:
-            projects.sort { $0.memory > $1.memory }
-        case .uptime:
-            projects.sort { $0.uptime > $1.uptime }
-        }
+        projects = applySort(projects, by: sortOrder)
         updateFilteredProjects()
     }
     
@@ -527,19 +496,12 @@ class AppState: ObservableObject {
     
     // MARK: - Persistence
     private func loadPreferences() {
-        let config = ConfigManager.shared.getConfig()
+        let config = configPersistence.getConfig()
         self.autoRefresh = config.autoRefresh
         self.refreshInterval = config.refreshInterval
         self.showNotifications = config.showNotifications
         self.compactMode = config.compactMode
-        // Map config sort order to app state sort order
-        switch config.sortOrder {
-        case .name: self.sortOrder = .name
-        case .status: self.sortOrder = .status
-        case .cpu: self.sortOrder = .cpu
-        case .memory: self.sortOrder = .memory
-        case .uptime: self.sortOrder = .uptime
-        }
+        self.sortOrder = config.sortOrder
         self.portPool = config.portPool
         self.tableColumns = config.tableColumns
     }
@@ -552,44 +514,31 @@ class AppState: ObservableObject {
             try? await Task.sleep(nanoseconds: 500_000_000)
             guard !Task.isCancelled else { return }
             
-            var config = ConfigManager.shared.getConfig()
+            var config = configPersistence.getConfig()
             config.autoRefresh = autoRefresh
             config.refreshInterval = refreshInterval
             config.showNotifications = showNotifications
             config.compactMode = compactMode
-            // Map app state sort order to config sort order
-            switch sortOrder {
-            case .name: config.sortOrder = .name
-            case .status: config.sortOrder = .status
-            case .cpu: config.sortOrder = .cpu
-            case .memory: config.sortOrder = .memory
-            case .uptime: config.sortOrder = .uptime
-            }
+            config.sortOrder = sortOrder
             config.portPool = portPool
             config.tableColumns = tableColumns
             
-            ConfigManager.shared.updateConfig(config)
+            configPersistence.updateConfig(config)
         }
     }
     
     // Immediate save without debounce (for critical operations)
     func savePreferencesImmediately() {
         saveDebounceTask?.cancel()
-        var config = ConfigManager.shared.getConfig()
+        var config = configPersistence.getConfig()
         config.autoRefresh = autoRefresh
         config.refreshInterval = refreshInterval
         config.showNotifications = showNotifications
         config.compactMode = compactMode
-        switch sortOrder {
-        case .name: config.sortOrder = .name
-        case .status: config.sortOrder = .status
-        case .cpu: config.sortOrder = .cpu
-        case .memory: config.sortOrder = .memory
-        case .uptime: config.sortOrder = .uptime
-        }
+        config.sortOrder = sortOrder
         config.portPool = portPool
         config.tableColumns = tableColumns
         
-        ConfigManager.shared.updateConfig(config)
+        configPersistence.updateConfig(config)
     }
 }

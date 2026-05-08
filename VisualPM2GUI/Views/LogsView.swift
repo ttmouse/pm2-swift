@@ -3,11 +3,17 @@ import SwiftUI
 // MARK: - Logs View
 struct LogsView: View {
     let project: PM2Project
+    let service: PM2ServiceProtocol
     @State private var logs: String = ""
     @State private var isLoading = true
     @State private var error: Error?
     @State private var showCopyAlert = false
     @Environment(\.dismiss) private var dismiss
+
+    init(project: PM2Project, service: PM2ServiceProtocol = PM2Service()) {
+        self.project = project
+        self.service = service
+    }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -123,7 +129,6 @@ struct LogsView: View {
 
         Task {
             do {
-                let service = PM2Service()
                 logs = try await service.fetchLogs(for: project.id, lines: 200)
                 isLoading = false
             } catch {

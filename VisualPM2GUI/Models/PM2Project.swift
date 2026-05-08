@@ -313,3 +313,75 @@ extension PM2Project {
         )
     }
 }
+
+// MARK: - Pure functions for filtering and sorting
+
+/// Project filter configuration (decoupled from AppState for testability)
+enum ProjectFilterType {
+    case all
+    case active
+    case inactive
+}
+
+func filterProjects(
+    _ projects: [PM2Project],
+    category: ServiceCategory?,
+    filterType: ProjectFilterType,
+    text: String
+) -> [PM2Project] {
+    var result = projects
+    if let category = category {
+        result = result.filter { $0.category == category }
+    }
+    switch filterType {
+    case .all:
+        break
+    case .active:
+        result = result.filter { $0.isOnline }
+    case .inactive:
+        result = result.filter { !$0.isOnline }
+    }
+    if !text.isEmpty {
+        result = result.filter { project in
+            project.name.localizedCaseInsensitiveContains(text) ||
+            project.id.localizedCaseInsensitiveContains(text) ||
+            (project.tags?.contains { $0.localizedCaseInsensitiveContains(text) } ?? false)
+        }
+    }
+    return result
+}
+
+func applySort(
+    _ projects: [PM2Project],
+    by order: SortOrder
+) -> [PM2Project] {
+    projects.sorted { lhs, rhs in
+        switch order {
+        case .name:
+            if lhs.name != rhs.name { return lhs.name < rhs.name }
+            return lhs.id < rhs.id
+        case .status:
+            if lhs.status.rawValue != rhs.status.rawValue { return lhs.status.rawValue < rhs.status.rawValue }
+            return lhs.name < rhs.name
+        case .cpu:
+            if lhs.cpu != rhs.cpu { return lhs.cpu > rhs.cpu }
+            return lhs.name < rhs.name
+        case .memory:
+            if lhs.memory != rhs.memory { return lhs.memory > rhs.memory }
+            return lhs.name < rhs.name
+        case .uptime:
+            if lhs.uptime != rhs.uptime { return lhs.uptime > rhs.uptime }
+            return lhs.name < rhs.name
+        }
+    }
+}
+
+func groupProjects(_ projects: [PM2Project]) -> [(groupName: String, projects: [PM2Project])] {
+    let grouped = Dictionary(grouping: projects) { $0.projectGroupKey }
+    return grouped.map { ($0.key, $0.value) }.sorted { a, b in
+        let aActive = a.projects.contains { $0.isOnline }
+        let bActive = b.projects.contains { $0.isOnline }
+        if aActive != bActive { return aActive }
+        return a.groupName < b.groupName
+    }
+}
