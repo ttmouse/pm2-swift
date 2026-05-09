@@ -223,12 +223,21 @@ Scopes: pm2-swift, pm2, configs
 - **Triage Labels**: 五个标准角色（needs-triage / needs-info / ready-for-agent / ready-for-human / wontfix）。详见 [docs/agents/triage-labels.md](./docs/agents/triage-labels.md)
 - **Domain Docs**: 单上下文布局。详见 [docs/agents/domain.md](./docs/agents/domain.md)
 - **Harness Rules / Application Owner**: 见 `.harness/agents/application-owner.md`
+- **Qoder Subagents**: 见 `.qoder/agents/`（可调用的专业 Agent）
 
 ## ON-DEMAND: Harness Engineering
 
 参见 `.harness/` 目录：
 
 - `.harness/rules/` — 架构、编码、测试、工作流规则
-- `.harness/agents/` — Agent 定义（含 Application Owner 编排中枢）
-- `.harness/skills/` — 可复用的开发技能
+- `.harness/agents/` — Agent 定义文档（含 Application Owner 编排中枢）
+- `.harness/skills/` — 可复用的开发技能（文档）
 - `.harness/changes/` — 变更追溯
+
+## ON-DEMAND: Qoder Configuration
+
+参见 `.qoder/` 目录：
+
+- `.qoder/agents/` — 注册的 Qoder subagent（application-owner / swift-dev / node-dev / reviewer）
+- `.qoder/specs/` — 功能规范文件
+- `.qoder/skills/` — 注册的 Qoder skill
