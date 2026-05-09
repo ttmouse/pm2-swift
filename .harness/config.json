@@ -1,0 +1,9 @@
+{
+  "project_name": "pm2-swift",
+  "language": "Python",
+  "default_branch": "main",
+  "verification_commands": [
+    "npm run build"
+  ],
+  "requires_human_review": true
+}
