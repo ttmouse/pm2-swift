@@ -38,8 +38,8 @@ UI (StatusBarMenu / ProjectMenuItem / LogsView / SettingsView)
 | 阶段 | 必读 |
 |------|------|
 | 架构分析 | `.harness/working-boundaries.md`（Architecture Boundaries 节） |
-| Swift 编码 | `docs/conventions/swift.md` |
-| Node.js 编码 | `docs/conventions/node.md` |
+| Swift 编码 | `docs/agents/swift-conventions.md` |
+| Node.js 编码 | `docs/agents/node-conventions.md` |
 | 测试 | `.harness/testing-and-verification.md` |
 | 代码自审 | `.harness/code-review.md` |
 

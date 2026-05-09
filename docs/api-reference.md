@@ -1,5 +1,7 @@
 # API Reference
 
+> Swift 类型签名参考。Node.js 封装层规范见 `docs/agents/node-conventions.md`。
+
 ## PM2ServiceProtocol
 
 ```swift
@@ -79,11 +81,9 @@ enum PM2ServiceError: Error, LocalizedError {
 }
 ```
 
-## PM2 Wrapper 命令
+## PM2Wrapper 命令
 
-```text
-node scripts/pm2_wrapper.js <command> [args]
-```
+> Node.js 封装层命令参考。详细规范见 `docs/agents/node-conventions.md`。
 
 | 命令 | 参数 | 模式 |
 |------|------|------|
@@ -98,12 +98,4 @@ node scripts/pm2_wrapper.js <command> [args]
 | scan | — | 异步 |
 | start-app | `<config-path> <name>` | 异步 |
 
-## 端口匹配优先级
-
-`extractPortFromArgs()` 模式匹配顺序（从最具体到最不具体）：
-
-1. `--port N` → uvicorn/fastapi
-2. `http.server` → Python HTTP
-3. `-l N` / `--listen N` → npx serve
-4. `-p N` → 通用简写
-5. `server.port=N` → Streamlit
+调用方式：`node scripts/pm2_wrapper.js <command> [args]`
