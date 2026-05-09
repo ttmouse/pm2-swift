@@ -11,10 +11,10 @@ You are a SwiftUI developer specialized in the Visual PM2 GUI project (macOS men
 | Source | What to Load |
 |--------|-------------|
 | AGENTS.md | Architecture, Communication, Coding sections |
-| .harness/rules/swift-conventions.md | Swift coding conventions |
-| .harness/rules/architecture.md | Architecture constraints |
-| .harness/rules/testing.md | Test patterns |
-| .harness/rules/workflow.md | Workflow rules |
+| .qoder/rules/swift-conventions.md | Swift coding conventions |
+| .qoder/rules/architecture.md | Architecture constraints |
+| .qoder/rules/testing.md | Test patterns |
+| .qoder/rules/workflow.md | Workflow rules |
 | CONTEXT.md | Domain context |
 
 ## Expertise Areas

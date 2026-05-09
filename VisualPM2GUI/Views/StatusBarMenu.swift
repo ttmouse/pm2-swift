@@ -25,6 +25,11 @@ struct StatusBarMenu: View {
     @State private var dragStartStatusWidth: CGFloat?
     @State private var dragStartUptimeWidth: CGFloat?
     @State private var dragStartActionsWidth: CGFloat?
+    @State private var cachedSortedProjects: [PM2Project] = []
+    @State private var lastFilterText: String = ""
+    @State private var lastProjectsCount: Int = 0
+    @State private var lastSortKey: ListSortKey = .name
+    @State private var lastSortAscending: Bool = true
 
     init(state: AppState) {
         self.state = state
@@ -426,7 +431,17 @@ struct StatusBarMenu: View {
     }
 
     private var sortedListProjects: [PM2Project] {
-        state.filteredProjects.sorted { lhs, rhs in
+        let currentProjectsCount = state.projects.count
+        let needsRecompute = lastFilterText != state.filterText
+            || lastProjectsCount != currentProjectsCount
+            || lastSortKey != listSortKey
+            || lastSortAscending != listSortAscending
+
+        if !needsRecompute {
+            return cachedSortedProjects
+        }
+
+        let sorted = state.filteredProjects.sorted { lhs, rhs in
             if lhs.id == rhs.id { return false }
 
             switch listSortKey {
@@ -469,6 +484,13 @@ struct StatusBarMenu: View {
                 return listSortAscending ? lhs.uptime < rhs.uptime : lhs.uptime > rhs.uptime
             }
         }
+
+        cachedSortedProjects = sorted
+        lastFilterText = state.filterText
+        lastProjectsCount = currentProjectsCount
+        lastSortKey = listSortKey
+        lastSortAscending = listSortAscending
+        return sorted
     }
 
     private var listHeader: some View {

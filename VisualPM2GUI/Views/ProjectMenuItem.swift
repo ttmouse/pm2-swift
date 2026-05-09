@@ -57,14 +57,13 @@ struct ProjectMenuItem: View {
                     .font(.system(size: 11, design: .monospaced))
                     .foregroundColor(.secondary)
                     .lineLimit(1)
-                    .multilineTextAlignment(.trailing)
                     .frame(width: portColumnWidth, alignment: .trailing)
 
                 // 运行时长列 - 纯英文等宽，右对齐数字对齐
                 Text(project.uptimeFormattedCompact)
                     .font(.system(size: 11, design: .monospaced))
                     .foregroundColor(.secondary)
-                    .multilineTextAlignment(.trailing)
+                    .lineLimit(1)
                     .frame(width: uptimeColumnWidth, alignment: .trailing)
 
                 Spacer(minLength: 8)
@@ -81,23 +80,23 @@ struct ProjectMenuItem: View {
                     .padding(.leading, 12)
                     .padding(.trailing, 8)
 
-                HStack(spacing: 8) {
-                    Text(project.name)
-                        .font(.system(size: 13, weight: .medium, design: .rounded))
-                        .lineLimit(1)
-                        .fixedSize(horizontal: false, vertical: true)
+                Text(project.name)
+                    .font(.system(size: 13, weight: .medium, design: .rounded))
+                    .lineLimit(1)
 
-                    Text(project.port.map { String($0) } ?? "")
-                        .font(.system(size: 11, design: .monospaced))
-                        .foregroundColor(.secondary)
+                Spacer(minLength: 4)
 
-                    Text(project.uptimeFormatted)
-                        .font(.system(size: 11, design: .monospaced))
-                        .foregroundColor(.secondary)
-                }
-                .layoutPriority(1)
+                Text(project.port.map { String($0) } ?? "")
+                    .font(.system(size: 11, design: .monospaced))
+                    .foregroundColor(.secondary)
+                    .lineLimit(1)
+                    .frame(width: portColumnWidth, alignment: .trailing)
 
-                Spacer()
+                Text(project.uptimeFormattedCompact)
+                    .font(.system(size: 11, design: .monospaced))
+                    .foregroundColor(.secondary)
+                    .lineLimit(1)
+                    .frame(width: uptimeColumnWidth, alignment: .trailing)
 
                 actionButtons
                     .padding(.trailing, 8)

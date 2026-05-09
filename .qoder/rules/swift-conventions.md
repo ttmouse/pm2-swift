@@ -1,3 +1,7 @@
+---
+trigger: model_decision
+description: Swift 编码强制规则（可选类型安全、错误处理、线程安全），命名约定，格式标准（缩进/MARK/修饰符顺序），设计模式（依赖注入/Mock/乐观更新/防抖保存）。
+---
 # Swift 编码规范
 
 ## 强制规则（不可违反）

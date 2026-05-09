@@ -1,3 +1,8 @@
+---
+name: diagnose
+description: pm2-swift 项目结构化故障诊断流程。包含问题分类、日志收集、Root Cause 定位路径（IPC/状态异常）、修复实施规范。
+---
+
 # Diagnose 技能
 
 ## 目的
@@ -60,4 +65,4 @@ AppState.refresh()
 - 创建最小复现环境
 - 一次只改一个变量
 - 修复后运行完整构建 + 测试
-- 更新 `.harness/changes/CHANGELOG.md` 记录根因
+- 更新 `.qoder/changelog/CHANGELOG.md` 记录根因

@@ -4,6 +4,8 @@ const path = require('path');
 
 const ECOSYSTEM_CONFIG_PATH = '/Users/douba/.pm2/ecosystem.config.js';
 
+process.on('exit', () => { try { pm2.disconnect(); } catch (_) {} });
+
 // 项目目录配置 - 扫描这些目录下的 pm2.config.js
 const PROJECT_DIRS = [
   '/Users/douba/Projects/XM/project',
@@ -86,15 +88,21 @@ function categorizeApp(name) {
   return 'Other';
 }
 
+let portMapCache = { map: null, mtime: 0, ttl: 5000 };
+
 function buildEcosystemPortMap() {
+  const now = Date.now();
+  if (portMapCache.map !== null && (now - portMapCache.mtime) < portMapCache.ttl) {
+    return portMapCache.map;
+  }
+
   try {
     const resolvedPath = path.resolve(ECOSYSTEM_CONFIG_PATH);
-    // Use require.resolve to get the correct cache key
     delete require.cache[require.resolve(resolvedPath)];
     const ecosystemConfig = require(resolvedPath);
     const apps = Array.isArray(ecosystemConfig?.apps) ? ecosystemConfig.apps : [];
     const result = new Map();
-    
+
     for (const app of apps) {
       if (!app || !app.name) continue;
       const env = app.env || {};
@@ -103,6 +111,7 @@ function buildEcosystemPortMap() {
         .find(v => v !== null) ?? extractPortFromArgs(app.args);
       if (port !== null) result.set(app.name, port);
     }
+    portMapCache = { map: result, mtime: now, ttl: 5000 };
     return result;
   } catch (error) {
     debugLog(`ecosystem_parse_error=${error.message}`);
@@ -115,7 +124,7 @@ pm2.connect((err) => {
   if (err) {
     debugLog(`connect_error=${err.message}`);
     console.error(JSON.stringify({ error: err.message }));
-    process.exit(1);
+    pm2.disconnect(() => process.exit(1));
   }
 
   switch (command) {

@@ -31,7 +31,7 @@ Tests/
 └── VisualPM2GUITests/
     └── GroupManagementTests.swift  # 单元测试
 
-.harness/             # Harness Engineering 体系（规则/Agent/技能/变更）
+.qoder/               # Qoder 配置（规则/Agent/Skill/变更追溯）
 docs/agents/          # Agent 辅助文档（domain/issue-tracker/triage-labels）
 .qoder/specs/         # 功能规范
 ```
@@ -222,22 +222,15 @@ Scopes: pm2-swift, pm2, configs
 - **Issue Tracker**: `.scratch/` 目录下 markdown 文件。详见 [docs/agents/issue-tracker.md](./docs/agents/issue-tracker.md)
 - **Triage Labels**: 五个标准角色（needs-triage / needs-info / ready-for-agent / ready-for-human / wontfix）。详见 [docs/agents/triage-labels.md](./docs/agents/triage-labels.md)
 - **Domain Docs**: 单上下文布局。详见 [docs/agents/domain.md](./docs/agents/domain.md)
-- **Harness Rules / Application Owner**: 见 `.harness/agents/application-owner.md`
+- **Harness Rules / Application Owner**: 见 `.qoder/agents/application-owner.md`
 - **Qoder Subagents**: 见 `.qoder/agents/`（可调用的专业 Agent）
-
-## ON-DEMAND: Harness Engineering
-
-参见 `.harness/` 目录：
-
-- `.harness/rules/` — 架构、编码、测试、工作流规则
-- `.harness/agents/` — Agent 定义文档（含 Application Owner 编排中枢）
-- `.harness/skills/` — 可复用的开发技能（文档）
-- `.harness/changes/` — 变更追溯
 
 ## ON-DEMAND: Qoder Configuration
 
 参见 `.qoder/` 目录：
 
+- `.qoder/rules/` — 架构、编码、测试、工作流规则（model_decision 触发）
 - `.qoder/agents/` — 注册的 Qoder subagent（application-owner / swift-dev / node-dev / reviewer）
+- `.qoder/skills/` — 项目级 skill（build-run / add-feature / diagnose）
+- `.qoder/changelog/` — 变更追溯与 CHANGELOG
 - `.qoder/specs/` — 功能规范文件
-- `.qoder/skills/` — 注册的 Qoder skill

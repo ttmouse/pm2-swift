@@ -1,3 +1,7 @@
+---
+trigger: model_decision
+description: XCTest 测试架构规范，MockPM2Service 实现标准，分组测试模式，断言类型，覆盖面要求，测试运行命令。
+---
 # 测试规范
 
 ## 测试架构

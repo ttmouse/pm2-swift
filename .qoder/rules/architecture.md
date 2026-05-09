@@ -1,3 +1,7 @@
+---
+trigger: model_decision
+description: 三层架构分层约束（View→AppState→PM2Service→Node.js IPC），服务层 IPC 契约，状态管理规范，并发控制规则，各文件职责边界。
+---
 # Architecture Rules
 
 ## 分层约束

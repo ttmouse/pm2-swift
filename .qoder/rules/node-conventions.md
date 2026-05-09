@@ -1,3 +1,7 @@
+---
+trigger: model_decision
+description: Node.js PM2 封装层契约（输出格式、全局异常捕获、PM2 连接生命周期），代码约定，命令实现模式（同步/异步），端口匹配顺序规则。
+---
 # Node.js 编码规范
 
 ## PM2 封装层契约

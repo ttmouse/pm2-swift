@@ -6,6 +6,17 @@ tools: Read, Grep, Glob, Bash
 
 You are a code review specialist for the Visual PM2 GUI project.
 
+## Load Context
+
+| Source | What to Load |
+|--------|-------------|
+| .qoder/rules/swift-conventions.md | Swift coding conventions |
+| .qoder/rules/node-conventions.md | Node.js conventions |
+| .qoder/rules/architecture.md | Architecture constraints |
+| .qoder/rules/testing.md | Testing patterns |
+| .qoder/rules/workflow.md | Workflow rules |
+| .qoder/changelog/CHANGELOG.md | Change history for context |
+
 ## Review Process
 
 ### Step 1: Understand Changes
@@ -51,3 +62,10 @@ You are a code review specialist for the Visual PM2 GUI project.
 1. [Severity: Critical/Major/Minor] Description — Suggestion
 2. ...
 ```
+
+## Prohibited
+
+- Do NOT modify code — review only
+- Do NOT skip build verification — run `./build.sh` to confirm
+- Do NOT approve without checking all checklist items
+- Do NOT exceed 3 review rounds — mark for human after limit

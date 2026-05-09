@@ -196,7 +196,7 @@ class AppState: ObservableObject {
             try await pm2Service.restartProject(id)
 
             // 等待一小段时间让 PM2 完成重启
-            try await Task.sleep(nanoseconds: 300_000_000) // 0.3秒
+            try await Task.sleep(nanoseconds: 150_000_000) // 0.15秒等待UI反馈
 
             await refresh()
 
@@ -222,7 +222,7 @@ class AppState: ObservableObject {
         pendingStarts.insert(id)
         do {
             try await pm2Service.startProject(id)
-            try await Task.sleep(nanoseconds: 300_000_000) // 0.3s 等待 PM2 稳定
+
             pendingStarts.remove(id)
             configPersistence.markProjectStarted(id)
             return nil
@@ -238,7 +238,7 @@ class AppState: ObservableObject {
         pendingStops.insert(id)
         do {
             try await pm2Service.stopProject(id)
-            try await Task.sleep(nanoseconds: 200_000_000) // 0.2s 等待 PM2 稳定
+
             pendingStops.remove(id)
             configPersistence.markProjectStopped(id)
             return nil
@@ -317,18 +317,64 @@ class AppState: ObservableObject {
 
     func startAllProjects() async {
         let offlineProjects = projects.filter { !$0.isOnline }
-        await withTaskGroup(of: Void.self) { group in
+        guard !offlineProjects.isEmpty else { return }
+        
+        var errors: [(String, Error)] = []
+        
+        await withTaskGroup(of: (String, Error?).self) { group in
             for project in offlineProjects {
-                group.addTask { await self.startProject(project.id) }
+                group.addTask {
+                    let error = await self._executeStartProject(project.id)
+                    return (project.id, error)
+                }
+            }
+            for await result in group {
+                if let error = result.1 {
+                    errors.append((result.0, error))
+                }
+            }
+        }
+        
+        await refresh()
+        try? await pm2Service.saveState()
+        
+        if showNotifications {
+            if errors.isEmpty {
+                sendNotification(title: "全部启动完成", message: "\(offlineProjects.count) 个项目已启动")
+            } else {
+                sendNotification(title: "部分启动失败", message: errors.map { "\($0.0): \($0.1.localizedDescription)" }.joined(separator: "\n"))
             }
         }
     }
 
     func stopAllProjects() async {
         let onlineProjects = projects.filter { $0.isOnline }
-        await withTaskGroup(of: Void.self) { group in
+        guard !onlineProjects.isEmpty else { return }
+        
+        var errors: [(String, Error)] = []
+        
+        await withTaskGroup(of: (String, Error?).self) { group in
             for project in onlineProjects {
-                group.addTask { await self.stopProject(project.id) }
+                group.addTask {
+                    let error = await self._executeStopProject(project.id)
+                    return (project.id, error)
+                }
+            }
+            for await result in group {
+                if let error = result.1 {
+                    errors.append((result.0, error))
+                }
+            }
+        }
+        
+        await refresh()
+        try? await pm2Service.saveState()
+        
+        if showNotifications {
+            if errors.isEmpty {
+                sendNotification(title: "全部停止完成", message: "\(onlineProjects.count) 个项目已停止")
+            } else {
+                sendNotification(title: "部分停止失败", message: errors.map { "\($0.0): \($0.1.localizedDescription)" }.joined(separator: "\n"))
             }
         }
     }

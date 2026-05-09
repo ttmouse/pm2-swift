@@ -545,6 +545,7 @@ module.exports = {
       max_memory_restart: '300M',
       env: {
         NODE_ENV: 'development',
+        PORT: '15926',
         PATH: process.env.PATH || '/usr/local/bin:/usr/bin:/bin:/opt/homebrew/bin',
         HOME: process.env.HOME || '',
       },
