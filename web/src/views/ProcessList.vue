@@ -46,6 +46,14 @@
                     </svg>
                     生成配置 Prompt
                 </button>
+                <div class="view-toggle">
+                    <button class="view-btn" :class="{ active: viewMode === 'flat' }" @click="viewMode = 'flat'" title="列表视图">列表</button>
+                    <button class="view-btn" :class="{ active: viewMode === 'grouped' }" @click="viewMode = 'grouped'" title="分组视图">分组</button>
+                </div>
+                <div v-if="viewMode === 'grouped'" class="fav-toggle">
+                    <button class="fav-btn" :class="{ active: favFilter === 'all' }" @click="favFilter = 'all'">全部</button>
+                    <button class="fav-btn" :class="{ active: favFilter === 'fav' }" @click="favFilter = 'fav'">收藏</button>
+                </div>
                 <span class="total-label">共</span>
                 <span class="total-num">{{ filteredList.length }}</span>
                 <span class="total-label">个进程</span>
@@ -57,7 +65,7 @@
         </div>
 
         <!-- 表格 -->
-        <div class="table-wrap">
+        <div class="table-wrap" v-show="viewMode === 'flat'">
             <table class="data-table">
                 <thead>
                     <tr>
@@ -109,7 +117,7 @@
                                 target="_blank"
                                 class="port-link"
                                 @click.stop
-                            >{{ row.port }}</a>
+                            >http://localhost:{{ row.port }}</a>
                             <span v-else class="muted">—</span>
                         </td>
                         <td class="col-source">
@@ -128,6 +136,70 @@
                     </tr>
                 </tbody>
             </table>
+        </div>
+
+        <!-- 分组视图 -->
+        <div v-if="viewMode === 'grouped'" class="grouped-wrap">
+          <div v-for="group in groupedList" :key="group.key" class="group-card">
+            <div class="group-header" @click="toggleGroup(group.key)">
+              <div class="group-header-left">
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="group-chevron" :class="{ expanded: isGroupExpanded(group.key) }">
+                  <path d="M9 18l6-6-6-6"/>
+                </svg>
+                <button class="fav-star" :class="{ active: isFavGroup(group.key) }" @click.stop="toggleFavGroup(group.key)" :title="isFavGroup(group.key) ? '取消收藏' : '收藏'">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+                  </svg>
+                </button>
+                <span class="group-name">{{ group.key }}</span>
+                <span class="group-count">{{ group.onlineCount }}/{{ group.projects.length }}</span>
+              </div>
+              <div class="group-header-right">
+                <button class="group-toggle-all" :class="group.allOnline ? 'btn-stop-all' : 'btn-start-all'" @click.stop="toggleGroupAll(group)" :title="group.allOnline ? '全部停止' : '全部启动'">
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor">
+                    <rect x="6" y="4" width="4" height="16" rx="1" v-if="group.allOnline" />
+                    <polygon points="5,3 19,12 5,21" v-else />
+                  </svg>
+                  {{ group.allOnline ? '停止全部' : '启动全部' }}
+                </button>
+              </div>
+            </div>
+            <div v-if="isGroupExpanded(group.key)" class="group-body">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th class="col-name">名称</th>
+                    <th class="col-status">状态</th>
+                    <th class="col-port">端口</th>
+                    <th class="col-source">来源</th>
+                    <th class="col-mem">内存</th>
+                    <th class="col-restart">重启</th>
+                    <th class="col-uptime">运行时长</th>
+                    <th class="col-actions">操作</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="row in group.projects" :key="row.name" class="data-row" @click="goDetail(row.name)">
+                    <td class="col-name">
+                      <div class="name-wrap"><span class="process-name">{{ row.name }}</span></div>
+                      <span class="process-pid">PID {{ row.pid || '—' }}</span>
+                    </td>
+                    <td class="col-status"><StatusBadge :status="row.status" /></td>
+                    <td class="col-port mono">
+                      <a v-if="row.port" :href="`http://localhost:${row.port}`" target="_blank" class="port-link" @click.stop>http://localhost:{{ row.port }}</a>
+                      <span v-else class="muted">—</span>
+                    </td>
+                    <td class="col-source"><span class="source-tag" :class="sourceClass(row)" :title="sourceTitle(row)">{{ sourceLabel(row) }}</span></td>
+                    <td class="col-mem mono">{{ row.memoryHuman }}</td>
+                    <td class="col-restart mono"><span :class="row.restarts > 0 ? 'has-restarts' : ''">{{ row.restarts }}</span></td>
+                    <td class="col-uptime mono muted">{{ row.uptimeHuman }}</td>
+                    <td class="col-actions" @click.stop><ActionButtons :process="row" /></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
 
             <!-- 空状态 -->
             <div v-if="!store.loading && filteredList.length === 0" class="empty-state">
@@ -151,7 +223,6 @@
                     <div class="skeleton skeleton-actions" />
                 </div>
             </div>
-        </div>
 
         <!-- 配置路径管理弹窗 -->
         <teleport to="body">
@@ -177,6 +248,19 @@
                                 <code class="path-text">{{ p.path }}</code>
                                 <button class="path-remove" @click="removeEcoPath(p.path)" title="移除">✕</button>
                             </div>
+                            <template v-for="(p, i) in configPaths.extra" :key="'apps-'+i">
+                                <div v-if="p.exists && p.apps && p.apps.length > 0" class="config-apps">
+                                    <div v-for="app in p.apps" :key="app.name" class="config-app-row">
+                                        <span class="config-app-name">{{ app.name }}</span>
+                                        <span class="config-app-status" :class="isAppRunning(app.name) ? 'running' : 'stopped'">
+                                            {{ isAppRunning(app.name) ? '运行中' : '已停止' }}
+                                        </span>
+                                        <button v-if="!isAppRunning(app.name)" class="config-app-start" @click="startConfigApp(p.path, app.name)" :disabled="startingApp === app.name">
+                                            {{ startingApp === app.name ? '启动中...' : '启动' }}
+                                        </button>
+                                    </div>
+                                </div>
+                            </template>
                         </div>
                         <div class="path-add-row">
                             <input
@@ -222,8 +306,101 @@ const store = useProcessStore();
 const router = useRouter();
 const route = useRoute();
 const searchKeyword = ref('');
-const statusFilter = ref('online');
+const statusFilter = ref('');
 const sort = ref({ field: 'name', dir: 'asc' });
+const viewMode = ref('flat');
+const startingApp = ref(null);
+
+function isAppRunning(name) {
+    return store.list.some(p => p.name === name && p.status === 'online');
+}
+
+async function startConfigApp(configFile, appName) {
+    if (startingApp.value) return;
+    startingApp.value = appName;
+    try {
+        await fetch('/api/processes/available/start', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ configFile, appName }),
+        });
+        ElMessage({ message: `${appName} 已启动`, type: 'success', duration: 2000 });
+        await store.fetchList();
+        await fetchConfigPaths();
+    } catch (e) {
+        ElMessage.error(`启动失败: ${e.message}`);
+    } finally {
+        startingApp.value = null;
+    }
+}
+const expandedGroups = ref(new Set(JSON.parse(localStorage.getItem('pm2-expanded-groups') || '[]')));
+const favoriteGroups = ref(new Set(JSON.parse(localStorage.getItem('pm2-favorite-groups') || '[]')));
+const favFilter = ref('all');
+
+// 持久化
+watch(expandedGroups, (s) => localStorage.setItem('pm2-expanded-groups', JSON.stringify([...s])), { deep: true });
+watch(favoriteGroups, (s) => localStorage.setItem('pm2-favorite-groups', JSON.stringify([...s])), { deep: true });
+
+function isFavGroup(key) { return favoriteGroups.value.has(key); }
+function toggleFavGroup(key) {
+  const s = new Set(favoriteGroups.value);
+  if (s.has(key)) s.delete(key); else s.add(key);
+  favoriteGroups.value = s;
+}
+
+// 分组键：从进程名提取项目前缀，如 xm-console-api → xm-console
+function projectGroupKey(name) {
+    const parts = name.split('-');
+    if (parts.length >= 2) return `${parts[0]}-${parts[1]}`;
+    return parts[0] || '未分组';
+}
+
+const groupedList = computed(() => {
+    const groups = {};
+    for (const p of filteredList.value) {
+        const key = projectGroupKey(p.name);
+        if (!groups[key]) groups[key] = { key, projects: [], onlineCount: 0, allOnline: true };
+        groups[key].projects.push(p);
+        if (p.status === 'online') groups[key].onlineCount++;
+        else groups[key].allOnline = false;
+    }
+    let result = Object.values(groups);
+    // 收藏筛选
+    if (favFilter.value === 'fav') {
+        result = result.filter(g => isFavGroup(g.key));
+    }
+    return result.sort((a, b) => {
+        // 收藏的排前面
+        const aFav = isFavGroup(a.key) ? 0 : 1;
+        const bFav = isFavGroup(b.key) ? 0 : 1;
+        if (aFav !== bFav) return aFav - bFav;
+        const aOnline = a.onlineCount > 0;
+        const bOnline = b.onlineCount > 0;
+        if (aOnline !== bOnline) return aOnline ? -1 : 1;
+        return a.key.localeCompare(b.key);
+    });
+});
+
+function toggleGroup(key) {
+    const s = new Set(expandedGroups.value);
+    if (s.has(key)) s.delete(key); else s.add(key);
+    expandedGroups.value = s;
+}
+
+function isGroupExpanded(key) {
+    return expandedGroups.value.has(key);
+}
+
+function toggleGroupAll(group) {
+    const action = group.allOnline ? 'stop' : 'start';
+    const names = group.projects.map(p => p.name);
+    if (action === 'start') {
+        names.forEach(n => store.start(n));
+    } else {
+        names.forEach(n => store.stop(n));
+    }
+    ElMessage({ message: `正在${action === 'start' ? '启动' : '停止'} ${group.key} 组 (${names.length} 个进程)`, type: 'info', duration: 2000 });
+}
 
 // 配置路径管理
 const showConfigPaths = ref(false);
@@ -304,7 +481,9 @@ function sourceTitle(row) {
 onMounted(() => {
     // 从 URL 读取筛选条件
     if (route.query.search) searchKeyword.value = route.query.search;
-    if (route.query.status) statusFilter.value = route.query.status;
+    // statusFilter 已默认 ''（全部），URL 中的 status 不再覆盖
+    if (route.query.sort) sort.value.field = route.query.sort;
+    if (route.query.dir === 'desc') sort.value.dir = 'desc';
 
     store.fetchList();
     store.startMetricsStream();
@@ -314,13 +493,18 @@ onUnmounted(() => {
     store.stopMetricsStream();
 });
 
-// 筛选条件同步到 URL
-watch([searchKeyword, statusFilter], () => {
+// 搜索时保持当前的 tab 筛选状态，不做自动切换
+
+// 搜索词 + 排序同步到 URL（筛选状态不同步，避免 URL 污染）
+watch([searchKeyword, sort], () => {
     const query = {};
     if (searchKeyword.value) query.search = searchKeyword.value;
-    if (statusFilter.value) query.status = statusFilter.value;
+    if (sort.value.field !== 'name' || sort.value.dir !== 'asc') {
+        query.sort = sort.value.field;
+        query.dir = sort.value.dir;
+    }
     router.replace({ query });
-});
+}, { deep: true });
 
 // Status tabs with counts
 const statusTabs = computed(() => {
@@ -692,7 +876,8 @@ module.exports = {
 /* Column specific */
 .col-name { min-width: 160px; }
 .col-status { width: 110px; }
-.col-port { width: 70px; }
+.col-port { width: 200px; }
+.col-port a { font-size: 11px; word-break: break-all; }
 .col-source { width: 95px; }
 .col-mem { width: 90px; }
 .col-restart { width: 70px; }
@@ -846,6 +1031,47 @@ module.exports = {
 .skeleton-uptime { width: 80px; }
 .skeleton-actions { width: 90px; margin-left: auto; }
 
+.available-item {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    flex: 1;
+    min-width: 0;
+}
+.available-name {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+.available-config {
+    font-size: 11px;
+    color: var(--text-muted);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.available-start {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--accent);
+    background: var(--accent-dim);
+    border: none;
+    padding: 4px 12px;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: var(--transition);
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+.available-start:hover {
+    background: var(--accent);
+    color: #fff;
+}
+.available-start:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
 /* ===== Config Paths Modal ===== */
 .modal-overlay {
     position: fixed; inset: 0; background: rgba(0,0,0,0.4);
@@ -884,6 +1110,55 @@ module.exports = {
 .path-empty { font-size: 12px; color: #64748b; padding: 8px 0; }
 
 .path-add-row { display: flex; gap: 8px; }
+.config-apps {
+    padding: 4px 20px 8px 20px;
+    border-bottom: 1px solid rgba(255,255,255,.04);
+}
+.config-app-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 3px 0;
+    font-size: 12px;
+}
+.config-app-name {
+    flex: 1;
+    color: var(--text-primary);
+    font-weight: 500;
+}
+.config-app-status {
+    font-size: 11px;
+    font-weight: 600;
+    padding: 1px 6px;
+    border-radius: 3px;
+}
+.config-app-status.running {
+    color: #22c55e;
+    background: #22c55e1a;
+}
+.config-app-status.stopped {
+    color: var(--text-muted);
+    background: var(--bg-hover);
+}
+.config-app-start {
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--accent);
+    background: var(--accent-dim);
+    border: none;
+    padding: 2px 10px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: var(--transition);
+}
+.config-app-start:hover {
+    background: var(--accent);
+    color: #fff;
+}
+.config-app-start:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
 .path-input {
     flex: 1; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);
     border-radius: 6px; padding: 8px 12px; color: #e2e8f0; font-size: 13px;
@@ -897,4 +1172,166 @@ module.exports = {
 .path-add-btn:hover { background: rgba(96,165,250,0.25); }
 .path-add-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 .path-error { font-size: 12px; color: #f87171; margin-top: 8px; }
+
+/* ===== View Toggle ===== */
+.view-toggle {
+    display: flex;
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    overflow: hidden;
+}
+.view-btn {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-muted);
+    background: transparent;
+    border: none;
+    padding: 3px 10px;
+    cursor: pointer;
+    transition: var(--transition);
+}
+.view-btn:hover { color: var(--text-secondary); }
+.view-btn.active {
+    background: var(--bg-elevated);
+    color: var(--text-primary);
+}
+
+/* ===== Fav Toggle ===== */
+.fav-toggle {
+    display: flex;
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    overflow: hidden;
+}
+.fav-btn {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-muted);
+    background: transparent;
+    border: none;
+    padding: 3px 10px;
+    cursor: pointer;
+    transition: var(--transition);
+}
+.fav-btn:hover { color: var(--text-secondary); }
+.fav-btn.active {
+    background: var(--accent-dim);
+    color: var(--accent);
+}
+
+/* ===== Grouped View ===== */
+.grouped-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+.group-card {
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+}
+.group-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 14px;
+    cursor: pointer;
+    user-select: none;
+    transition: var(--transition);
+}
+.group-header:hover { background: var(--bg-elevated); }
+.group-header-left {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.group-chevron {
+    color: var(--text-muted);
+    transition: transform 0.2s;
+}
+.group-chevron.expanded {
+    transform: rotate(90deg);
+}
+.fav-star {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    border: none;
+    background: transparent;
+    color: var(--text-muted);
+    cursor: pointer;
+    border-radius: 4px;
+    transition: var(--transition);
+    flex-shrink: 0;
+    padding: 0;
+}
+.fav-star:hover {
+    background: var(--bg-hover);
+    color: var(--text-secondary);
+}
+.fav-star.active {
+    color: #fbbf24;
+}
+.fav-star.active:hover {
+    color: #f59e0b;
+}
+.group-name {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+.group-count {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-muted);
+    background: var(--bg-elevated);
+    padding: 1px 7px;
+    border-radius: 4px;
+    font-variant-numeric: tabular-nums;
+}
+.group-header-right {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+.group-toggle-all {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 10px;
+    font-weight: 600;
+    padding: 3px 8px;
+    border-radius: 4px;
+    border: none;
+    cursor: pointer;
+    transition: var(--transition);
+}
+.btn-start-all {
+    background: rgba(34, 197, 94, 0.12);
+    color: #22c55e;
+}
+.btn-start-all:hover {
+    background: rgba(34, 197, 94, 0.2);
+}
+.btn-stop-all {
+    background: rgba(245, 158, 11, 0.12);
+    color: #f59e0b;
+}
+.btn-stop-all:hover {
+    background: rgba(245, 158, 11, 0.2);
+}
+.group-body {
+    border-top: 1px solid var(--border-subtle);
+}
+.group-body .data-table th {
+    padding: 6px 12px;
+}
+.group-body .data-row td {
+    padding: 7px 12px;
+}
 </style>
