@@ -97,7 +97,8 @@
                     >
                         <td class="col-name">
                             <div class="name-wrap">
-                                <span class="process-name">{{ row.name }}</span>
+                                <span class="process-name">{{ getProcessDisplayName(row.name) || row.name }}</span>
+                                <span class="process-name-sub">{{ row.name }}</span>
                                 <button class="copy-btn" title="复制名称" @click.stop="copyName(row.name)">
                                     <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                         <rect x="9" y="9" width="13" height="13" rx="2"/>
@@ -151,7 +152,7 @@
                     <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
                   </svg>
                 </button>
-                <span class="group-name">{{ group.key }}</span>
+                <span class="group-name">{{ getGroupDisplayName(group.key) }}</span>
                 <span class="group-count">{{ group.onlineCount }}/{{ group.projects.length }}</span>
               </div>
               <div class="group-header-right">
@@ -190,7 +191,8 @@
                   <tr v-for="row in group.projects" :key="row.name" class="data-row" @click="goDetail(row.name)">
                     <td class="col-name">
                       <div class="name-wrap">
-                        <span class="process-name">{{ row.name }}</span>
+                        <span class="process-name">{{ getProcessDisplayName(row.name) || row.name }}</span>
+                        <span class="process-name-sub">{{ row.name }}</span>
                         <button class="copy-btn" title="复制名称" @click.stop="copyName(row.name)">
                           <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <rect x="9" y="9" width="13" height="13" rx="2"/>
@@ -290,6 +292,7 @@ import { useRoute, useRouter } from 'vue-router';
 import { useProcessStore } from '@/stores/processes';
 import StatusBadge from '@/components/StatusBadge.vue';
 import ActionButtons from '@/components/ActionButtons.vue';
+import { getGroupDisplayName, getProcessDisplayName } from '@/utils/projectNames';
 import { ElMessage } from 'element-plus';
 
 // SortIcon component
@@ -939,6 +942,15 @@ module.exports = {
     font-weight: 600;
     color: var(--text-primary);
     font-size: 13px;
+    margin-bottom: 1px;
+    line-height: 1.3;
+}
+.process-name-sub {
+    display: block;
+    font-size: 10px;
+    color: var(--text-muted);
+    font-weight: 400;
+    line-height: 1.2;
     margin-bottom: 1px;
 }
 
