@@ -130,7 +130,6 @@ module.exports = {
       name: 'pm2-dashboard',
       cwd: '/Users/douba/Projects/pm2-swift',
       script: 'scripts/pm2_http_server.js',
-      interpreter: '/Users/douba/.local/bin/node',
       instances: 1,
       exec_mode: 'fork',
       autorestart: true,
@@ -139,7 +138,8 @@ module.exports = {
       max_restarts: 10,
       max_memory_restart: '200M',
       env: {
-        NODE_ENV: 'production',
+        NODE_ENV: 'development',
+        VITE_DEV: 'true',
         PM2_DASHBOARD_PORT: '4321',
         PM2_DASHBOARD_HOST: '127.0.0.1',
         PATH: process.env.PATH || '/usr/local/bin:/usr/bin:/bin:/opt/homebrew/bin',

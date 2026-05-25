@@ -1,5 +1,5 @@
 <template>
-    <div class="action-group">
+    <div v-if="!isProtected" class="action-group">
         <button
             class="action-btn"
             :class="process.status === 'online' ? 'btn-stop' : 'btn-start'"
@@ -43,17 +43,21 @@
             </svg>
         </button>
     </div>
+    <span v-else class="protected-label">系统</span>
 </template>
 
 <script setup>
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
 import { ElMessageBox, ElMessage } from 'element-plus';
 import { useProcessStore } from '@/stores/processes';
 
 const props = defineProps({
     process: { type: Object, required: true },
     onRefresh: { type: Function, default: null },
+    protectedNames: { type: Array, default: () => ['pm2-dashboard'] },
 });
+
+const isProtected = computed(() => props.protectedNames.includes(props.process.name));
 
 const store = useProcessStore();
 const pending = ref(false);
@@ -141,6 +145,16 @@ async function handleDelete() {
     color: var(--status-errored);
     border-color: var(--status-errored);
     background: rgba(239, 68, 68, 0.1);
+}
+
+.protected-label {
+    font-size: 10px;
+    color: var(--text-muted);
+    padding: 2px 8px;
+    background: var(--bg-elevated);
+    border-radius: 4px;
+    font-weight: 500;
+    letter-spacing: 0.3px;
 }
 
 .spin {

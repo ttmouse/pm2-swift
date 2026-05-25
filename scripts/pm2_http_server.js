@@ -15,10 +15,13 @@ const express = require('express');
 const { WebSocketServer } = require('ws');
 const http = require('http');
 const path = require('path');
+const { createProxyMiddleware } = require('http-proxy-middleware');
 
 const PORT = process.env.PM2_DASHBOARD_PORT || 4321;
 const HOST = process.env.PM2_DASHBOARD_HOST || '127.0.0.1';
 const STATIC_DIR = path.join(__dirname, '../web/dist');
+const VITE_DEV_PORT = 4322;
+const isDev = process.env.VITE_DEV === 'true';
 
 const app = express();
 const server = http.createServer(app);
@@ -38,22 +41,32 @@ app.use('/api', (req, res) => {
     res.status(404).json({ error: 'API endpoint not found', code: 'NOT_FOUND' });
 });
 
-// 静态资源（前端打包产物）- 带缓存控制
-app.use(express.static(STATIC_DIR, {
-    maxAge: '1h',
-    etag: true,
-    lastModified: true,
-}));
+if (isDev) {
+    // 开发模式：非 API/WS 请求代理到 Vite 开发服务器（提供 HMR）
+    console.log(`[dev] Proxying frontend requests to Vite dev server at :${VITE_DEV_PORT}`);
+    app.use(createProxyMiddleware({
+        target: `http://127.0.0.1:${VITE_DEV_PORT}`,
+        changeOrigin: true,
+        ws: true,
+    }));
+} else {
+    // 生产模式：提供构建后的静态文件
+    app.use(express.static(STATIC_DIR, {
+        maxAge: '1h',
+        etag: true,
+        lastModified: true,
+    }));
 
-// SPA 降级 — 未匹配 GET 请求返回 index.html（支持 Vue Router history 模式）
-app.get('*', (req, res) => {
-    res.sendFile(path.join(STATIC_DIR, 'index.html'));
-});
+    // SPA 降级 — 未匹配 GET 请求返回 index.html
+    app.get('*', (req, res) => {
+        res.sendFile(path.join(STATIC_DIR, 'index.html'));
+    });
 
-// 非 GET 未匹配路径返回 404
-app.use((req, res) => {
-    res.status(404).json({ error: 'Not found' });
-});
+    // 非 GET 未匹配路径返回 404
+    app.use((req, res) => {
+        res.status(404).json({ error: 'Not found' });
+    });
+}
 
 // 全局错误处理 — 放在最后，确保捕获所有下游路由/中间件的错误
 app.use(require('./server/middleware/error-handler'));
