@@ -155,13 +155,13 @@
                 <span class="group-count">{{ group.onlineCount }}/{{ group.projects.length }}</span>
               </div>
               <div class="group-header-right">
-                <a v-if="group.webUrl" :href="group.webUrl" target="_blank" class="group-web-link" @click.stop :title="'打开前端: ' + group.webUrl">
+                <a v-if="group.webUrl" :href="group.webUrl" target="_blank" class="group-web-link" @click.stop :title="'打开: ' + group.webUrl">
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <circle cx="12" cy="12" r="10"/>
                     <line x1="2" y1="12" x2="22" y2="12"/>
                     <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
                   </svg>
-                  前端
+                  {{ group.webUrl ? ':' + group.webUrl.split(':').pop() : '' }}
                 </a>
                 <button class="group-toggle-all" :class="group.allOnline ? 'btn-stop-all' : 'btn-start-all'" @click.stop="toggleGroupAll(group)" :title="group.allOnline ? '全部停止' : '全部启动'">
                   <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor">
