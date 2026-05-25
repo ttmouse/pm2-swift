@@ -47,7 +47,6 @@ if (isDev) {
     app.use(createProxyMiddleware({
         target: `http://127.0.0.1:${VITE_DEV_PORT}`,
         changeOrigin: true,
-        ws: true,
     }));
 } else {
     // 生产模式：提供构建后的静态文件
