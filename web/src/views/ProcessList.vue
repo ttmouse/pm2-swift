@@ -361,10 +361,14 @@ function projectGroupKey(name) {
 
 // 从组内进程推断前端入口 URL
 function groupWebUrl(projects) {
+    // 1. 优先找名称含 frontend/web/client/ui 的进程
     const frontend = projects.find(p =>
         p.port && /frontend|web|client|ui/i.test(p.name) && p.status === 'online'
     );
-    return frontend ? `http://localhost:${frontend.port}` : null;
+    if (frontend) return `http://localhost:${frontend.port}`;
+    // 2. 降级：取组内第一个有端口的在线进程
+    const anyPort = projects.find(p => p.port && p.status === 'online');
+    return anyPort ? `http://localhost:${anyPort.port}` : null;
 }
 
 const groupedList = computed(() => {
