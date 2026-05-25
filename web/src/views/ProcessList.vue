@@ -155,6 +155,14 @@
                 <span class="group-count">{{ group.onlineCount }}/{{ group.projects.length }}</span>
               </div>
               <div class="group-header-right">
+                <a v-if="group.webUrl" :href="group.webUrl" target="_blank" class="group-web-link" @click.stop :title="'打开前端: ' + group.webUrl">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"/>
+                    <line x1="2" y1="12" x2="22" y2="12"/>
+                    <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+                  </svg>
+                  前端
+                </a>
                 <button class="group-toggle-all" :class="group.allOnline ? 'btn-stop-all' : 'btn-start-all'" @click.stop="toggleGroupAll(group)" :title="group.allOnline ? '全部停止' : '全部启动'">
                   <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor">
                     <rect x="6" y="6" width="12" height="12" rx="2" v-if="group.allOnline" />
@@ -351,14 +359,26 @@ function projectGroupKey(name) {
     return parts[0] || '未分组';
 }
 
+// 从组内进程推断前端入口 URL
+function groupWebUrl(projects) {
+    const frontend = projects.find(p =>
+        p.port && /frontend|web|client|ui/i.test(p.name) && p.status === 'online'
+    );
+    return frontend ? `http://localhost:${frontend.port}` : null;
+}
+
 const groupedList = computed(() => {
     const groups = {};
     for (const p of filteredList.value) {
         const key = projectGroupKey(p.name);
-        if (!groups[key]) groups[key] = { key, projects: [], onlineCount: 0, allOnline: true };
+        if (!groups[key]) groups[key] = { key, projects: [], onlineCount: 0, allOnline: true, webUrl: null };
         groups[key].projects.push(p);
         if (p.status === 'online') groups[key].onlineCount++;
         else groups[key].allOnline = false;
+    }
+    // 为每个组计算前端入口
+    for (const g of Object.values(groups)) {
+        g.webUrl = groupWebUrl(g.projects);
     }
     let result = Object.values(groups);
     // 收藏筛选
@@ -1294,6 +1314,24 @@ module.exports = {
     display: flex;
     align-items: center;
     gap: 6px;
+}
+.group-web-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 10px;
+    font-weight: 600;
+    padding: 3px 8px;
+    border-radius: 4px;
+    border: none;
+    cursor: pointer;
+    transition: var(--transition);
+    text-decoration: none;
+    background: rgba(96, 165, 250, 0.12);
+    color: #60a5fa;
+}
+.group-web-link:hover {
+    background: rgba(96, 165, 250, 0.2);
 }
 .group-toggle-all {
     display: inline-flex;
