@@ -117,7 +117,7 @@
                                 target="_blank"
                                 class="port-link"
                                 @click.stop
-                            >http://localhost:{{ row.port }}</a>
+                            >{{ row.port }}</a>
                             <span v-else class="muted">—</span>
                         </td>
                         <td class="col-source">
@@ -157,7 +157,7 @@
               <div class="group-header-right">
                 <button class="group-toggle-all" :class="group.allOnline ? 'btn-stop-all' : 'btn-start-all'" @click.stop="toggleGroupAll(group)" :title="group.allOnline ? '全部停止' : '全部启动'">
                   <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor">
-                    <rect x="6" y="4" width="4" height="16" rx="1" v-if="group.allOnline" />
+                    <rect x="6" y="6" width="12" height="12" rx="2" v-if="group.allOnline" />
                     <polygon points="5,3 19,12 5,21" v-else />
                   </svg>
                   {{ group.allOnline ? '停止全部' : '启动全部' }}
@@ -181,12 +181,20 @@
                 <tbody>
                   <tr v-for="row in group.projects" :key="row.name" class="data-row" @click="goDetail(row.name)">
                     <td class="col-name">
-                      <div class="name-wrap"><span class="process-name">{{ row.name }}</span></div>
+                      <div class="name-wrap">
+                        <span class="process-name">{{ row.name }}</span>
+                        <button class="copy-btn" title="复制名称" @click.stop="copyName(row.name)">
+                          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="9" y="9" width="13" height="13" rx="2"/>
+                            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                          </svg>
+                        </button>
+                      </div>
                       <span class="process-pid">PID {{ row.pid || '—' }}</span>
                     </td>
                     <td class="col-status"><StatusBadge :status="row.status" /></td>
                     <td class="col-port mono">
-                      <a v-if="row.port" :href="`http://localhost:${row.port}`" target="_blank" class="port-link" @click.stop>http://localhost:{{ row.port }}</a>
+                      <a v-if="row.port" :href="`http://localhost:${row.port}`" target="_blank" class="port-link" @click.stop>{{ row.port }}</a>
                       <span v-else class="muted">—</span>
                     </td>
                     <td class="col-source"><span class="source-tag" :class="sourceClass(row)" :title="sourceTitle(row)">{{ sourceLabel(row) }}</span></td>
@@ -248,19 +256,7 @@
                                 <code class="path-text">{{ p.path }}</code>
                                 <button class="path-remove" @click="removeEcoPath(p.path)" title="移除">✕</button>
                             </div>
-                            <template v-for="(p, i) in configPaths.extra" :key="'apps-'+i">
-                                <div v-if="p.exists && p.apps && p.apps.length > 0" class="config-apps">
-                                    <div v-for="app in p.apps" :key="app.name" class="config-app-row">
-                                        <span class="config-app-name">{{ app.name }}</span>
-                                        <span class="config-app-status" :class="isAppRunning(app.name) ? 'running' : 'stopped'">
-                                            {{ isAppRunning(app.name) ? '运行中' : '已停止' }}
-                                        </span>
-                                        <button v-if="!isAppRunning(app.name)" class="config-app-start" @click="startConfigApp(p.path, app.name)" :disabled="startingApp === app.name">
-                                            {{ startingApp === app.name ? '启动中...' : '启动' }}
-                                        </button>
-                                    </div>
-                                </div>
-                            </template>
+
                         </div>
                         <div class="path-add-row">
                             <input
@@ -1079,7 +1075,7 @@ module.exports = {
     z-index: 9999;
 }
 .modal-card {
-    background: #1e1e2e; border-radius: 12px; width: 560px; max-width: 90vw;
+    background: #1e1e2e; border-radius: 12px; width: 80vw; max-width: 1100px; min-width: 640px;
     box-shadow: 0 8px 32px rgba(0,0,0,0.4); overflow: hidden;
 }
 .modal-header {
@@ -1103,7 +1099,7 @@ module.exports = {
 .path-badge.exists { background: rgba(52,211,153,0.15); color: #34d399; }
 .path-badge.missing { background: rgba(239,68,68,0.12); color: #f87171; }
 
-.path-text { font-size: 12px; color: #94a3b8; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
+.path-text { font-size: 13px; color: #c8d0dc; overflow-wrap: break-word; word-break: break-all; flex: 1; line-height: 1.5; }
 .path-remove { background: none; border: none; color: #64748b; cursor: pointer; font-size: 14px; padding: 2px 6px; }
 .path-remove:hover { color: #f87171; }
 
