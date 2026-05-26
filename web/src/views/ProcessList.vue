@@ -151,7 +151,17 @@
                     <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
                   </svg>
                 </button>
-                <span class="group-name">{{ getGroupDisplayName(group.key) }}</span>
+                <template v-if="editingGroup === group.key">
+                  <input class="group-name-input" v-model="editGroupValue" ref="editInput" @keyup.enter="saveEditGroup(group.key)" @keyup.escape="cancelEditGroup" @blur="saveEditGroup(group.key)" />
+                </template>
+                <template v-else>
+                  <span class="group-name">{{ getGroupDisplayName(group.key, groupNameOverrides) }}</span>
+                  <button class="group-rename-btn" @click.stop="startEditGroup(group.key, getGroupDisplayName(group.key, groupNameOverrides))" title="重命名">
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M17 3a2.83 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/>
+                    </svg>
+                  </button>
+                </template>
                 <span class="group-count">{{ group.onlineCount }}/{{ group.projects.length }}</span>
               </div>
               <div class="group-header-right">
@@ -341,6 +351,32 @@ async function startConfigApp(configFile, appName) {
 const expandedGroups = ref(new Set(JSON.parse(localStorage.getItem('pm2-expanded-groups') || '[]')));
 const favoriteGroups = ref(new Set(JSON.parse(localStorage.getItem('pm2-favorite-groups') || '[]')));
 const favFilter = ref('all');
+
+// 分组名自定义覆盖（localStorage 持久化）
+const groupNameOverrides = ref(JSON.parse(localStorage.getItem('pm2-group-names') || '{}'));
+const editingGroup = ref(null);
+const editGroupValue = ref('');
+
+watch(groupNameOverrides, (s) => localStorage.setItem('pm2-group-names', JSON.stringify(s)), { deep: true });
+
+function startEditGroup(key, currentName) {
+  editingGroup.value = key;
+  editGroupValue.value = currentName;
+}
+function saveEditGroup(key) {
+  const v = editGroupValue.value.trim();
+  if (v) {
+    groupNameOverrides.value = { ...groupNameOverrides.value, [key.toLowerCase()]: v };
+  } else {
+    const next = { ...groupNameOverrides.value };
+    delete next[key.toLowerCase()];
+    groupNameOverrides.value = next;
+  }
+  editingGroup.value = null;
+}
+function cancelEditGroup() {
+  editingGroup.value = null;
+}
 
 // 持久化
 watch(expandedGroups, (s) => localStorage.setItem('pm2-expanded-groups', JSON.stringify([...s])), { deep: true });
@@ -1314,6 +1350,41 @@ module.exports = {
     padding: 1px 7px;
     border-radius: 4px;
     font-variant-numeric: tabular-nums;
+}
+.group-rename-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+    border: none;
+    background: transparent;
+    color: var(--text-muted);
+    border-radius: 4px;
+    cursor: pointer;
+    opacity: 0.3;
+    transition: opacity 0.15s, color 0.15s;
+    flex-shrink: 0;
+    padding: 0;
+}
+.group-header:hover .group-rename-btn {
+    opacity: 0.7;
+}
+.group-rename-btn:hover {
+    opacity: 1 !important;
+    color: var(--text-primary);
+}
+.group-name-input {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-primary);
+    background: rgba(255,255,255,0.06);
+    border: 1px solid var(--accent);
+    border-radius: 4px;
+    padding: 1px 6px;
+    outline: none;
+    width: 160px;
+    font-family: inherit;
 }
 .group-header-right {
     display: flex;

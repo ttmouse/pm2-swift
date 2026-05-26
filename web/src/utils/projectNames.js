@@ -46,10 +46,15 @@ export function getProcessDisplayName(name) {
 }
 
 /**
- * 获取分组的中文显示名
+ * 获取分组的中文显示名（支持运行时覆盖）
  * @param {string} key - 分组 key（如 xm-console）
+ * @param {Object} [overrides] - 运行时覆盖映射
  * @returns {string} 中文名（无映射时返回原 key）
  */
-export function getGroupDisplayName(key) {
-  return GROUP_NAMES[key.toLowerCase()] || key;
+export function getGroupDisplayName(key, overrides) {
+  const lower = key.toLowerCase();
+  if (overrides && overrides[lower] !== undefined) {
+    return overrides[lower];
+  }
+  return GROUP_NAMES[lower] || key;
 }
